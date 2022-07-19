@@ -35,7 +35,8 @@ public class GenerateAST {
         p.println();
         p.println("abstract class " + baseName + " {");
         
-        // visitor interface 
+        // visitor interface, using Generics. Generics are more or less just 
+        // like C++ templates. You can make a generic interface like you see here
         // generates something like 
         /**
         interface Visitor<R> {
@@ -60,6 +61,8 @@ public class GenerateAST {
             }
 
             // Visitor pattern. Example below (in Binary class):
+            // here we make a generic method, the <R> passes along the type and 
+            // the second "R" is the return value. 
             /**
              * 	@Override
 		        <R> R accept(Visitor<R> visitor) {
