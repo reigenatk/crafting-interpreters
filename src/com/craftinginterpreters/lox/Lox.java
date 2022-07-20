@@ -1,3 +1,7 @@
+/**
+ * This class is the entry point of our program
+ */
+
 package com.craftinginterpreters.lox;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -52,18 +56,40 @@ public class Lox {
         }
     }
 
+    // THIS IS THE IMPORTANT STUFF
     private static void run(String input_string) {
+        // pass each line to the scanner to be lexed
         Scanner scanner = new Scanner(input_string);
         List<Token> tokens = scanner.scanTokens();
 
         for (Token t : tokens) {
             System.out.println(t);
         }
+
+        // pass list of tokens to parser
+        Parser parser = new Parser(tokens);
+        Expression exp = parser.parse();
+
+        // if there was an error on this line, don't print
+        if (hadError) return;
+
+        // print out the abstract syntax tree that the parser sees
+        System.out.println(new AstPrinter().print(exp));
     }
 
     // note that this doesn't actually stop the program, it just prints error message instead
     static void error(int line, String message) {
         reportError(line, "", message);
+    }
+
+    // another interface for error reporting, where we pass along a erroring Token instead
+    static void error(Token t, String message) {
+        if (t.type == TokenType.EOF) {
+            reportError(t.line, " at end of file", message);
+        }
+        else {
+            reportError(t.line, " at '" + t.lexeme + "'", message);
+        }
     }
 
     private static void reportError(int line, String where, String message) {

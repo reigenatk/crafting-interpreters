@@ -1,3 +1,7 @@
+/**
+ * This class represents a token that is read from a String
+ */
+
 package com.craftinginterpreters.lox;
 
 public class Token {

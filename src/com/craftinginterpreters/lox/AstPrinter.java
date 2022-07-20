@@ -1,3 +1,7 @@
+/*
+ * This class pretty prints an AST into a String
+ */
+
 package com.craftinginterpreters.lox;
 
 // so to explain this in my own terms, let's say we call AstPrinter.print(e);

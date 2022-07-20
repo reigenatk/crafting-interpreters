@@ -1,3 +1,7 @@
+/**
+ * This class takes in a string and creates a List<Token> Structure
+ */
+
 package com.craftinginterpreters.lox;
 
 // a static import, makes it so we don't have to type TokenType.[TOKEN_VALUE]
