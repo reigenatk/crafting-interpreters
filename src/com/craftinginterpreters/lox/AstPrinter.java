@@ -23,10 +23,11 @@ package com.craftinginterpreters.lox;
 // the abstract syntax tree printer will implement the interface 
 public class AstPrinter implements Expression.Visitor<String> {
     String print(Expression exp) {
-        return exp.accept(this); // passes obj of type Visitor<String>
+        return exp.accept(this); // this calls the visit functions below and returns a String
     }
 
-    // the following four methods help print out the syntax tree nicely in String format
+    // the following four methods implement the Visitor<R> interface which is inherited
+    // They help print out the syntax tree nicely in String format
     // notice that they access the member variables for each of our Expression productions
     @Override
     public String visitBinaryExpression(Expression.Binary expression) {

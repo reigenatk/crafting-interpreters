@@ -35,7 +35,7 @@ public class Parser {
         return equality();
     }
 
-    // Equality -> Comparison ( ("!==" | "==") Comparison )*
+    // Equality -> Comparison ( ("!=" | "==") Comparison )*
     // statements like "x == y" or "x == y != z"
     private Expression equality() {
         Expression first_comparison = comparison();
@@ -179,6 +179,8 @@ public class Parser {
 
     // ===================================== END OF HELPER METHODS ========================== //
     private static class ParseError extends RuntimeException {}
+
+    // called by the parser. We don't want to terminate the program though.
     private ParseError error(Token token, String message) {
         Lox.error(token, message);
         return new ParseError();
