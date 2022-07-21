@@ -1,30 +1,42 @@
 package com.craftinginterpreters.lox;
 import static com.craftinginterpreters.lox.TokenType.*;
 
+import java.util.List;
+
 // this marks the beginning of the RUNTIME
 // the class that actually takes the expressions from the syntax tree
 // and EVALUATES them in Java. Result is always an
 // Object (which can be any of the primitive data types)
 // this allows for dynamic typing, meaning we only resolve types here.
-public class Interpreter implements Expression.Visitor<Object> {
+public class Interpreter implements Expression.Visitor<Object>, Statement.Visitor<Void> {
+
+    // the current innermost scope's environment
+    private Environment currentEnv = new Environment();
 
     // evaluate calls accept, which then depending on which expression e is,
     // calls one of the visit methods below.
-    private Object evaluate(Expression e) {
-        return e.accept(this);
+    private Object evaluate(Expression s) {
+        return s.accept(this);
     }
 
-    // this is the method that Lox will call, its similar to Parser's parse() function
-    public String interpret(Expression exp) {
+    // this is like evaluate but for statements! An expression is like 3+4, a statement is like
+    // 3+4; for example. We need this because we otherwise wouldn't have an way to call
+    // accept (aka actually do the visitor pattern) with for statements
+    private void execute(Statement s) {
+        s.accept(this);
+    }
+
+    // this takes in a list of statements, otherwise known as a program
+    // and calls accept on each one, which will start running the statement visit methods below
+    public void interpret(List<Statement> program) {
         try {
-            Object result = this.evaluate(exp);
-            String loxOutput = stringify(result);
-            return loxOutput;
+            for (Statement s : program) {
+                execute(s);
+            }
         }
         catch (RuntimeError e) {
             Lox.error(e);
         }
-        return null;
     }
 
     // converting Java back to Lox (null in Java is nil in Lox)
@@ -42,7 +54,69 @@ public class Interpreter implements Expression.Visitor<Object> {
         }
         return object.toString();
     }
+    // ================================= Start Statement Visits ========================= //
+    
+    // this is something like "3+4;" and in that case we just evaluate it and move on. 
+    // Nothing special actually happens
+    @Override
+    public Void visitExpressionStatementStatement(Statement.ExpressionStatement statement) {
+        System.out.println(stringify(evaluate(statement.expression)));
 
+        // return null to satisfy Void
+        return null;
+    }
+
+    // this should Print in java
+    @Override
+	public Void visitPrintStatementStatement(Statement.PrintStatement statement) {
+        Object val = evaluate(statement.expression);
+
+        // we should stringify first just like we did in interpret()
+        System.out.println(stringify(val));
+        return null;
+    }
+
+    // this should set the variable using Environment.addNewVariable
+    @Override
+    public Void visitVariableDeclarationStatement(Statement.VariableDeclaration statement) {
+        // value of variable
+        Object value = null;
+
+        // initializer could be null, something like "var x;" for example
+        if (statement.initializer != null) {
+            value = evaluate(statement.initializer);
+        }
+        
+        currentEnv.addNewVariable(statement.name.lexeme, value);
+        return null;
+    }
+
+    @Override
+    public Void visitBlockStatementStatement(Statement.BlockStatement statement) {
+        // store the old environment since we gotta restore it later
+        Environment previousEnv = this.currentEnv;
+        
+        try {
+            // make a new environment for this new block
+            Environment blockEnv = new Environment(currentEnv);
+            // set current environment to block environment
+            this.currentEnv = blockEnv;
+
+            for (Statement s : statement.statements) {
+                execute(s);
+            }
+        }
+        finally {
+            // restore old environment
+            this.currentEnv = previousEnv;
+        }
+        return null;
+    }
+
+    // ================================= End Statement Visits ========================= //
+
+
+    // ================================= Start Expression Visits ========================= //
 
     // lots of stuff here: comparison, equality, and less/greater than (or equal to)
     @Override
@@ -98,31 +172,6 @@ public class Interpreter implements Expression.Visitor<Object> {
         return null;
     }
 
-    
-    // this prevents stuff like -"horse" or 3 + "cow"
-    // also note this is a void function because it throws an exception
-    private void verifyNumericalValues(Token operator, Object... values) {
-        for (Object o : values) {
-            if (!(o instanceof Double)) {
-                throw new RuntimeError(operator,
-                 "Operation must take numerical arguments");
-            }
-        }
-    }
-
-    // this determines the notion of equality in Lox
-    // we will use java's .equals() method on most primitive classes to 
-    // determine this behavior
-    private boolean isEqual(Object left, Object right) {
-        // so this seems strange but basically in Lox, two nulls will not be equal
-        // according to the IEEE standard NaN != NaN
-        if (left == null && right == null) return false;
-
-        // cant call .equals on a null
-        if (left == null) return false;
-        return left.equals(right);
-    }
-
     // a grouping evaluates to itself. (3+2-1) in Lox = evaluate(3+2-1)
     // so we must recursively call evaluate
     @Override
@@ -155,6 +204,44 @@ public class Interpreter implements Expression.Visitor<Object> {
         }
         // dead code for compiler
         return null;
+    }
+
+    @Override
+    public Object visitVariableExpression(Expression.Variable expression) {
+        return currentEnv.getVariableValue(expression.name);
+    }
+
+    @Override
+    public Object visitAssignmentExpression(Expression.Assignment expression) {
+        Object rhs = evaluate(expression.value);
+        currentEnv.changeExistingVariable(expression.name, rhs);
+        return rhs;
+    }
+
+    // ================================= End Expression Visits ========================= //
+
+    // this prevents stuff like -"horse" or 3 + "cow"
+    // also note this is a void function because it throws an exception
+    private void verifyNumericalValues(Token operator, Object... values) {
+        for (Object o : values) {
+            if (!(o instanceof Double)) {
+                throw new RuntimeError(operator,
+                 "Operation must take numerical arguments");
+            }
+        }
+    }
+
+    // this determines the notion of equality in Lox
+    // we will use java's .equals() method on most primitive classes to 
+    // determine this behavior
+    private boolean isEqual(Object left, Object right) {
+        // so this seems strange but basically in Lox, two nulls will not be equal
+        // according to the IEEE standard NaN != NaN
+        if (left == null && right == null) return false;
+
+        // cant call .equals on a null
+        if (left == null) return false;
+        return left.equals(right);
     }
 
     private boolean isTruthy(Object val) {

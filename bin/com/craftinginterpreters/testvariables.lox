@@ -1,0 +1,4 @@
+var hello = "hello";
+// re-assigning a value to it
+hello = 3;
+print hello;

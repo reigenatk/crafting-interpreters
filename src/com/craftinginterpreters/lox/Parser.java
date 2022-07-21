@@ -1,13 +1,14 @@
 package com.craftinginterpreters.lox;
 
+import java.util.ArrayList;
 import java.util.List;
 
-import com.craftinginterpreters.lox.Expression.Literal;
 
 import static com.craftinginterpreters.lox.TokenType.*;
 
 /**
- * The scanner's input is a String. The parser's input is a List<Token> from the Scanner
+ * The parser's input is a List<Token> from the Scanner, and outputs a List<Statement> for 
+ * the interpreter to evaluate during runtime. Parser's job is to create the AST
  */
 public class Parser {
     private final List<Token> tokens;
@@ -19,20 +20,125 @@ public class Parser {
         this.tokens = tokens;
     }
 
-    // we will call this method to parse after the lexer has finished!
-    // very simple, just calls expression() which starts recursive parsing
-    public Expression parse() {
+    // new parse looks for statements, not expressions. Expressions are
+    // production of statement.
+    public List<Statement> parse() {
+        List<Statement> program = new ArrayList<Statement>();
+        
+        while (!isAtEnd()) {
+            program.add(declaration());
+        }
+        return program;
+    }
+
+    // declaration -> varDecl | statement
+    private Statement declaration() {
         try {
-            return expression();
+            // if variable declaration like "var x = 3;"
+            if (match(VAR)) {
+                return varDeclaration();
+            }
+
+            // else if just statement (either print or exp statement)
+            return statement();
         }
         catch (ParseError p) {
+            // so if there was error parsing the current token, we want to 
+            // synchronize to next available location to keep parsing
+            // since internally, ParseError will have called Lox.error() already so
+            // the main class will be notified. But we don't want to stop parsing.
+            synchronize();
             return null;
         }
     }
+    
+    // statement -> expressionStatement | printStatement
+    private Statement statement() {
+        // print statement
+        if (match(PRINT)) {
+            
+            return printStatement();
+        }
+        // block statement
+        if (match(LEFT_BRACE)) {
+            return new Statement.BlockStatement(block());
+        }
 
-    // Expression -> Equality
+        // expression statement
+        return expressionStatement();
+    }
+
+    // [expression];
+    private Statement expressionStatement() {
+        Expression exp = expression();
+        Statement stmt = new Statement.ExpressionStatement(exp);
+        consume(SEMICOLON, "Expression Statement must end with a semicolon");
+        return stmt;
+        
+    }
+
+    // print [expression];
+    private Statement printStatement() {
+        Expression right_exp = expression();
+        Statement stmt = new Statement.PrintStatement(right_exp);
+        consume(SEMICOLON, "Print Statement must end with a semicolon");
+        return stmt;
+    }
+
+    // block → "{" declaration* "}" ;
+    private List<Statement> block() {
+        List<Statement> codeInsideBlock = new ArrayList<>();
+        while (!check(RIGHT_BRACE) && !isAtEnd()) {
+            Statement s = declaration();
+            codeInsideBlock.add(s);
+        }
+        
+        consume(RIGHT_BRACE, "Block statement { has no closing }");
+        return codeInsideBlock;
+    }
+
+    // varDecl -> "var" IDENTIFIER ("=" expression )? ";" where ? means 0 or 1
+    private Statement varDeclaration() {
+        Token variableName = consume(IDENTIFIER, "Variable name expected");
+        // if there is an expression that this variable should be set to
+        Expression exp = null;
+        if (match(EQUAL)) {
+            exp = expression();
+        }
+        consume(SEMICOLON, "Variable Statement must end with a semicolon");
+        return new Statement.VariableDeclaration(variableName, exp);
+    }
+
+    // Expression -> assignment
     private Expression expression() {
-        return equality();
+        return assignment();
+    }
+
+    // assignment → IDENTIFIER "=" assignment | equality;
+    // this one's tricky, check out page 122 for explanation
+    // essentially though we parse stuff before the equals sign as an expression
+    // check if its a variable, if it is then we grab its token
+    // and we evaluate rhs, then create the new Expression.Assignment()
+    // and if no equals sign then OK its just equality()
+    // the reason we have to do it this way is because LHS could be complex
+    // like x.y.z or something, and that is also a valid expression statement so we can abuse that
+    private Expression assignment() {
+        Expression lhs = equality();
+        if (match(EQUAL)) {
+            Token equalsToken = previous();
+            Expression rhs = assignment();
+            if (lhs instanceof Expression.Variable) {
+                // valid assignment statement
+                Expression.Variable variableName = (Expression.Variable) lhs;
+                Token variable = variableName.name;
+                return new Expression.Assignment(variable, rhs);
+            }
+            else {
+                // invalid assignment statement
+                error(equalsToken, "Invalid assignment");
+            }
+        }
+        return lhs;
     }
 
     // Equality -> Comparison ( ("!=" | "==") Comparison )*
@@ -98,13 +204,16 @@ public class Parser {
     private Expression primary() {
         // these keywords don't have value assigned to them from Scanner
         // so we attach them manually here
-        if (match(NIL)) return new Literal(null);
-        if (match(TRUE)) return new Literal(true);
-        if (match(FALSE)) return new Literal(false);
+        if (match(NIL)) return new Expression.Literal(null);
+        if (match(TRUE)) return new Expression.Literal(true);
+        if (match(FALSE)) return new Expression.Literal(false);
 
         // we need to do previous here because recall, match() does advance the counter
         // forwards in the List of Tokens
-        if (match(NUMBER, STRING)) return new Literal(previous().literal);
+        if (match(NUMBER, STRING)) return new Expression.Literal(previous().literal);
+
+        // if its none of these patterns before, then we say it must be a variable token
+        if (match(IDENTIFIER)) return new Expression.Variable(previous());
 
         // this part is interesting- basically, if we have a ( then 
         // it will be picked up as a literal. It will then recurse on the right side of 
@@ -176,8 +285,8 @@ public class Parser {
         if (!isAtEnd()) current++;
         return previous();
     }
-
     // ===================================== END OF HELPER METHODS ========================== //
+
     private static class ParseError extends RuntimeException {}
 
     // called by the parser. We don't want to terminate the program though.

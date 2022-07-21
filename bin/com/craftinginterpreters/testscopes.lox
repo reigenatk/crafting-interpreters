@@ -1,0 +1,12 @@
+var global = "I am a global variable";
+{
+    var global = "I am shadowing the global variable";
+    print global; // should print "I am shadowing the global variable"
+    {
+        global = "shadow changed";
+        var local = "I am inside all of you";
+        print global + " " + local; // expecting "shadow changed I am inside all of you"
+    }
+}
+var stuff = global;
+print stuff; // expecting "I am a global variable"

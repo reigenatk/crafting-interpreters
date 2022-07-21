@@ -21,7 +21,18 @@ public class GenerateAST {
         "Binary : Expression left, Token operator, Expression right",
         "Grouping : Expression expression",
         "Literal : Object value",
-        "Unary : Token operator, Expression right"));
+        "Unary : Token operator, Expression right",
+        "Variable: Token name",
+        "Assignment: Token name, Expression value"
+        ));
+
+        // a statement is an expression with a semicolon after it, or a print statement
+        defineAST(outputDir, "Statement", Arrays.asList(
+            "ExpressionStatement : Expression expression",
+            "PrintStatement : Expression expression",
+            "VariableDeclaration : Token name, Expression initializer",
+            "BlockStatement: List<Statement> statements"
+        ));
     }
 
     private static void defineAST(String outputDir, String baseName, List<String> productions) throws IOException {

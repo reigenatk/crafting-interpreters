@@ -41,7 +41,7 @@ public class Lox {
         byte[] bytes = Files.readAllBytes(Paths.get(filepath));
         // create a String from the byte array
         run(new String(bytes, Charset.defaultCharset()));
-        System.out.println("The current charset is: " + Charset.defaultCharset().displayName());
+        // System.out.println("The current charset is: " + Charset.defaultCharset().displayName());
         
         // if error parsing or lexing, or during runtime, exit the lox program
         if (hadError) System.exit(65);
@@ -72,27 +72,27 @@ public class Lox {
         Scanner scanner = new Scanner(input_string);
         List<Token> tokens = scanner.scanTokens();
 
-        for (Token t : tokens) {
-            System.out.println(t);
-        }
+        // for (Token t : tokens) {
+        //     System.out.println(t);
+        // }
 
         // pass list of tokens to parser
         Parser parser = new Parser(tokens);
-        Expression exp = parser.parse();
+        List<Statement> exp = parser.parse();
 
         // if there was an error on this line, don't print
         if (hadError) return;
 
         // print out the abstract syntax tree that the parser sees
-        System.out.println(new AstPrinter().print(exp));
+        // System.out.println(new AstPrinter().print(exp));
 
         // try to evaluate the syntax tree
-        String result = interpreter.interpret(exp);
+        interpreter.interpret(exp);
 
         // check for runtime errors
         if (hadRuntimeError) return;
 
-        System.out.println(result);
+        // System.out.println(result);
     }
 
     // ===================================== ERROR HANDLERS BEGIN ====================+===== //
@@ -117,7 +117,8 @@ public class Lox {
     // called from Interpreter.java (runtime)
     static void error(RuntimeError r) {
         hadRuntimeError = true;
-        System.err.println("[line " + r.token.line + "] token " + r.token.lexeme + ": " + r.getMessage());
+        System.err.println("[line " + r.token.line + "] token " + 
+        r.token.lexeme + ": " + r.getMessage());
     }
 
     private static void reportError(int line, String where, String message) {
