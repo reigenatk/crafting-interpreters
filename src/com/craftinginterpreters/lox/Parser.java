@@ -2,6 +2,7 @@ package com.craftinginterpreters.lox;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Arrays;
 
 
 import static com.craftinginterpreters.lox.TokenType.*;
@@ -64,6 +65,21 @@ public class Parser {
             return new Statement.BlockStatement(block());
         }
 
+        // if statement
+        if (match(IF)) {
+            return ifStatement();
+        }
+
+        // while statement
+        if (match(WHILE)) {
+            return whileStatement();
+        }
+
+        // for statement
+        if (match(FOR)) {
+            return forStatement();
+        }
+
         // expression statement
         return expressionStatement();
     }
@@ -83,6 +99,90 @@ public class Parser {
         Statement stmt = new Statement.PrintStatement(right_exp);
         consume(SEMICOLON, "Print Statement must end with a semicolon");
         return stmt;
+    }
+
+    // ifStmt → "if" "(" expression ")" statement ( "else" statement )? ;
+    private Statement ifStatement() {
+        consume(LEFT_PAREN, "if statement missing '(' token");
+        Expression exp = expression();
+        consume(RIGHT_PAREN, "if statement missing ')' token");
+        Statement ifContents = statement();
+
+        // if there's an else branch
+        Statement elseContents = null;
+        while(check(ELSE) && !isAtEnd()) {
+            advance(); // consume else token
+            elseContents = statement();
+        }
+
+        return new Statement.IfStatement(exp, ifContents, elseContents);
+    }
+
+    // whileStmt → "while" "(" expression ")" statement 
+    private Statement whileStatement() {
+        consume(LEFT_PAREN, "while statement missing '(' token");
+        Expression exp = expression();
+        consume(RIGHT_PAREN, "while statement missing ')' token");
+        Statement whileContents = statement();
+        return new Statement.WhileStatement(exp, whileContents);
+    }
+    // forStmt → "for" "(" ( varDecl | exprStmt | ";" ) expression? ";" expression? ")" statement ;
+    // just an example, for (int i = 1; i < 3; i++)
+    // initial: "int i = 1"
+    // condition: "i < 3"
+    // increment: "i++"
+    private Statement forStatement() {
+        Statement initial = null;
+        consume(LEFT_PAREN, "for statement missing '(' token");
+        if (match(VAR)) {
+            initial = varDeclaration();
+        }
+        else if (match(SEMICOLON)) {
+            // then no first part
+        }
+        else {
+            initial = expressionStatement();
+        }
+        Expression condition = null;
+        if (match(SEMICOLON)) {
+            // no second part
+        }
+        else {
+            condition = expression();
+            consume(SEMICOLON, "for statement missing ';' token");
+        }
+        Expression increment = null;
+        if (match(RIGHT_PAREN)) {
+            // no third part
+        }
+        else {
+            increment = expression();
+            consume(RIGHT_PAREN, "for statement missing ')' token");
+        }
+        Statement code = statement();
+
+        // now we have to desugar the condition into a single Expression
+        // the increment is like a little code that runs after each iteration of a while loop
+        // we can represent that by making a Block statement and adding to the end the increment
+        // also we don't support ++ or anything so we should write it like "i = i+1" for now
+        if (increment != null) {
+            code = new Statement.BlockStatement(Arrays.asList(code, 
+            new Statement.ExpressionStatement(increment)));
+        }
+
+        if (condition == null) condition = new Expression.Literal(true);
+        Statement body = new Statement.WhileStatement(condition, code);
+
+        // the initial condition should run before the loop takes place
+        // furthermore it should be outside the whilestatement, since it only runs once
+        if (initial != null) {
+            body = new Statement.BlockStatement(Arrays.asList( 
+            initial, body));
+        }
+
+        // so to summarize, a For loop is just a While loop on a block statement with
+        // an initial condition before it, and a nested increment block inside
+        return body;
     }
 
     // block → "{" declaration* "}" ;
@@ -114,7 +214,7 @@ public class Parser {
         return assignment();
     }
 
-    // assignment → IDENTIFIER "=" assignment | equality;
+    // assignment → IDENTIFIER "=" assignment | logic_or
     // this one's tricky, check out page 122 for explanation
     // essentially though we parse stuff before the equals sign as an expression
     // check if its a variable, if it is then we grab its token
@@ -123,7 +223,7 @@ public class Parser {
     // the reason we have to do it this way is because LHS could be complex
     // like x.y.z or something, and that is also a valid expression statement so we can abuse that
     private Expression assignment() {
-        Expression lhs = equality();
+        Expression lhs = logic_or();
         if (match(EQUAL)) {
             Token equalsToken = previous();
             Expression rhs = assignment();
@@ -137,6 +237,28 @@ public class Parser {
                 // invalid assignment statement
                 error(equalsToken, "Invalid assignment");
             }
+        }
+        return lhs;
+    }
+
+    // logic_or → logic_and ( "or" logic_and )* ;
+    private Expression logic_or() {
+        Expression lhs = logic_and();
+        while (match(AND)) {
+            Token or = previous();
+            Expression e = logic_and();
+            lhs = new Expression.Logical(lhs, or, e);
+        }
+        return lhs;
+    }
+
+    // logic_and → equality ( "and" equality )* ;
+    private Expression logic_and() {
+        Expression lhs = equality();
+        while (match(AND)) {
+            Token and = previous();
+            Expression e = equality();
+            lhs = new Expression.Logical(lhs, and, e);
         }
         return lhs;
     }

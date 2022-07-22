@@ -23,15 +23,18 @@ public class GenerateAST {
         "Literal : Object value",
         "Unary : Token operator, Expression right",
         "Variable: Token name",
-        "Assignment: Token name, Expression value"
+        "Assignment: Token name, Expression value",
+        "Logical: Expression left, Token operator, Expression right"
         ));
 
-        // a statement is an expression with a semicolon after it, or a print statement
+        // a statement is a superset of expressions. You can have expressions inside of statements
         defineAST(outputDir, "Statement", Arrays.asList(
             "ExpressionStatement : Expression expression",
             "PrintStatement : Expression expression",
             "VariableDeclaration : Token name, Expression initializer",
-            "BlockStatement: List<Statement> statements"
+            "BlockStatement: List<Statement> statements",
+            "IfStatement: Expression condition, Statement ifCode, Statement elseCode",
+            "WhileStatement: Expression condition, Statement code"
         ));
     }
 

@@ -11,6 +11,7 @@ abstract class Expression {
 		R visitUnaryExpression(Unary expression);
 		R visitVariableExpression(Variable expression);
 		R visitAssignmentExpression(Assignment expression);
+		R visitLogicalExpression(Logical expression);
 	}
 	static class Binary extends Expression {
 		final Expression left;
@@ -90,6 +91,22 @@ abstract class Expression {
 		Assignment(Token name, Expression value) {
 			this.name = name;
 			this.value = value;
+		}
+	}
+	static class Logical extends Expression {
+		final Expression left;
+		final Token operator;
+		final Expression right;
+
+		@Override
+		<R> R accept(Visitor<R> visitor) {
+			return visitor.visitLogicalExpression(this);
+		}
+
+		Logical(Expression left, Token operator, Expression right) {
+			this.left = left;
+			this.operator = operator;
+			this.right = right;
 		}
 	}
 

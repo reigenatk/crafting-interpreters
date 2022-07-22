@@ -60,7 +60,7 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
     // Nothing special actually happens
     @Override
     public Void visitExpressionStatementStatement(Statement.ExpressionStatement statement) {
-        System.out.println(stringify(evaluate(statement.expression)));
+        stringify(evaluate(statement.expression));
 
         // return null to satisfy Void
         return null;
@@ -91,14 +91,16 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
         return null;
     }
 
+    // this represents a new block { }, wherein we must create a new Environment to store
+    // the variables in this scope.
     @Override
     public Void visitBlockStatementStatement(Statement.BlockStatement statement) {
         // store the old environment since we gotta restore it later
         Environment previousEnv = this.currentEnv;
         
         try {
-            // make a new environment for this new block
-            Environment blockEnv = new Environment(currentEnv);
+            // make a new environment for this new block (with current env as parent)
+            Environment blockEnv = new Environment(this.currentEnv);
             // set current environment to block environment
             this.currentEnv = blockEnv;
 
@@ -109,6 +111,36 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
         finally {
             // restore old environment
             this.currentEnv = previousEnv;
+        }
+        return null;
+    }
+
+    // this represents an if statement. We evaluate the condition and then execute certain code
+    // depending on the result of that condition evaluation
+    @Override
+    public Void visitIfStatementStatement(Statement.IfStatement statement) {
+        // evaluate the condition
+        Object condition = evaluate(statement.condition);
+        if (isTruthy(condition)) {
+            // then execute all the statements in the if block
+            execute(statement.ifCode);
+        }
+        else {
+            // so if false, check to see if there's an else
+            if (statement.elseCode != null) {
+                execute(statement.elseCode);
+            }
+        }
+        // reaches here if if-statement was false and there's no else statement
+        return null;
+    }
+
+    // when we visit a while statement, we should evaluate the condition as long as its true
+    @Override
+    public Void visitWhileStatementStatement(Statement.WhileStatement statement) {
+        while (isTruthy(evaluate(statement.condition))) {
+            // then execute all the statements in the if block
+            execute(statement.code);
         }
         return null;
     }
@@ -206,16 +238,42 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
         return null;
     }
 
+    // assuming "var x = 3" was ran before this, then doing "x;" a line later should return 3
     @Override
     public Object visitVariableExpression(Expression.Variable expression) {
         return currentEnv.getVariableValue(expression.name);
     }
 
+    // something like "x=3;" returns 3 believe it or not
     @Override
     public Object visitAssignmentExpression(Expression.Assignment expression) {
         Object rhs = evaluate(expression.value);
         currentEnv.changeExistingVariable(expression.name, rhs);
         return rhs;
+    }
+
+    // OK so if we are doing an AND, then the moment we see a false we know answer is false
+    // similarly for OR, the moment we see true, the answer is true
+    // otherwise, result depends on the evaluation of the right expression!
+    // this code is left associative which is also good
+    // also note that we aren't returning true or false, but rather the expression itself
+    // this let's us support stuff like "print "hi" or 2" => "hi"
+    @Override
+    public Object visitLogicalExpression(Expression.Logical expression) {
+        Object left = evaluate(expression.left);
+        if (expression.operator.type == AND) {
+            if (!isTruthy(left)) {
+                return left; // false
+            }
+        }
+        else if (expression.operator.type == OR) {
+            if (isTruthy(left)) {
+                return left; // true
+            }
+        }
+
+        // ooo this is interesting
+        return evaluate(expression.right);
     }
 
     // ================================= End Expression Visits ========================= //

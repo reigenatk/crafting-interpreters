@@ -9,9 +9,24 @@ enum TokenType {
     BANG, BANG_EQUAL, EQUAL, EQUAL_EQUAL, GREATER, GREATER_EQUAL, 
     LESS, LESS_EQUAL,
 
+    // primitives
     IDENTIFIER, STRING, NUMBER,
 
-    // keywords
-    AND, CLASS, ELSE, FALSE, FUN, FOR, IF, NIL, OR, PRINT,
-    RETURN, SUPER, THIS, TRUE, VAR, WHILE, EOF
+    // control flow
+    IF, ELSE, WHILE, FOR, BREAK,
+
+    // logical conditions
+    AND, OR,
+
+    // primitives
+    TRUE, FALSE, NIL, 
+
+    // OOP
+    CLASS, THIS, SUPER,
+    
+    // functions
+    FUN, RETURN,
+
+    // etc.
+    VAR, EOF, PRINT
 }

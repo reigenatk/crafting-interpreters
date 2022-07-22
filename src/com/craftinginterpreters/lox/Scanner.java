@@ -173,6 +173,7 @@ public class Scanner {
         keywordsMap.put("true", TRUE);
         keywordsMap.put("var", VAR);
         keywordsMap.put("while", WHILE);
+        keywordsMap.put("break", BREAK);
     }
 
     private Boolean isDigit(char c) {

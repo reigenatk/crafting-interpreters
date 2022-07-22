@@ -1,0 +1,27 @@
+// should print "3 is a truthy value!"
+var x = 3;
+if (x) {
+    print x + " is a truthy value!";
+}
+
+// hello2
+var y = 4;
+if (y < 3) {
+    print "hello";
+}
+else {
+    print "hello2";
+}
+
+// 3 2 1 0
+var stuff = 4;
+while (stuff > 0) {
+    stuff = stuff - 1;
+    print stuff;
+}
+
+var j = 0;
+for (var i = 0; i < 5; i = i + 1) {
+    j = j + i;
+}
+print j; // 10?

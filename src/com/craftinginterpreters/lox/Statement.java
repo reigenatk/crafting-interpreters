@@ -9,6 +9,8 @@ abstract class Statement {
 		R visitPrintStatementStatement(PrintStatement statement);
 		R visitVariableDeclarationStatement(VariableDeclaration statement);
 		R visitBlockStatementStatement(BlockStatement statement);
+		R visitIfStatementStatement(IfStatement statement);
+		R visitWhileStatementStatement(WhileStatement statement);
 	}
 	static class ExpressionStatement extends Statement {
 		final Expression expression;
@@ -58,6 +60,36 @@ abstract class Statement {
 
 		BlockStatement(List<Statement> statements) {
 			this.statements = statements;
+		}
+	}
+	static class IfStatement extends Statement {
+		final Expression condition;
+		final Statement ifCode;
+		final Statement elseCode;
+
+		@Override
+		<R> R accept(Visitor<R> visitor) {
+			return visitor.visitIfStatementStatement(this);
+		}
+
+		IfStatement(Expression condition, Statement ifCode, Statement elseCode) {
+			this.condition = condition;
+			this.ifCode = ifCode;
+			this.elseCode = elseCode;
+		}
+	}
+	static class WhileStatement extends Statement {
+		final Expression condition;
+		final Statement code;
+
+		@Override
+		<R> R accept(Visitor<R> visitor) {
+			return visitor.visitWhileStatementStatement(this);
+		}
+
+		WhileStatement(Expression condition, Statement code) {
+			this.condition = condition;
+			this.code = code;
 		}
 	}
 

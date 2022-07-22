@@ -45,6 +45,7 @@ public class Environment {
             if (parentEnv != null) {
                 // not global scope yet, then try asking parent env if it knows
                 parentEnv.changeExistingVariable(varName, val);
+                return;
             }
             else {
                 // global scope still doesn't know
