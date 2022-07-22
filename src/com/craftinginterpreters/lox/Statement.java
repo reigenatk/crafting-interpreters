@@ -13,6 +13,7 @@ abstract class Statement {
 		R visitWhileStatementStatement(WhileStatement statement);
 		R visitBreakStatementStatement(BreakStatement statement);
 		R visitFunctionStatementStatement(FunctionStatement statement);
+		R visitReturnStatementStatement(ReturnStatement statement);
 	}
 	static class ExpressionStatement extends Statement {
 		final Expression expression;
@@ -118,6 +119,18 @@ abstract class Statement {
 			this.funcName = funcName;
 			this.args = args;
 			this.code = code;
+		}
+	}
+	static class ReturnStatement extends Statement {
+		final Expression exp;
+
+		@Override
+		<R> R accept(Visitor<R> visitor) {
+			return visitor.visitReturnStatementStatement(this);
+		}
+
+		ReturnStatement(Expression exp) {
+			this.exp = exp;
 		}
 	}
 

@@ -1,0 +1,14 @@
+if (1 and false) {
+    print "hello";
+}
+
+if (false or false) {
+    print "hello";
+}
+
+fun fibbonacci(i) {
+    if (i == 0 or i == 1) return 1; 
+    return fibbonacci(i-1) + fibbonacci(i-2);
+}
+
+print fibbonacci(10);

@@ -97,6 +97,11 @@ public class Parser {
             return functionDeclaration();
         }
 
+        // return statements
+        if (match(RETURN)) {
+            return returnStatement();
+        }
+
         // expression statement
         return expressionStatement();
     }
@@ -254,6 +259,19 @@ public class Parser {
         return new Statement.FunctionStatement(funcName, params, functionCode);
     }
 
+    // returnStmt → "return" expression? ";" 
+    private Statement returnStatement() {
+        Expression e = null;
+        if (check(SEMICOLON)) {
+            // then its just "return;"
+        }
+        else {
+            e = expression();
+        }
+        consume(SEMICOLON, "Missing semicolon after return statement");
+        return new Statement.ReturnStatement(e);
+    }
+
     private Statement breakStatement() {
         consume(SEMICOLON, "Break Statement must end with a semicolon");
         return new Statement.BreakStatement();
@@ -318,7 +336,7 @@ public class Parser {
     // logic_or → logic_and ( "or" logic_and )* ;
     private Expression logic_or() {
         Expression lhs = logic_and();
-        while (match(AND)) {
+        while (match(OR)) {
             Token or = previous();
             Expression e = logic_and();
             lhs = new Expression.Logical(lhs, or, e);

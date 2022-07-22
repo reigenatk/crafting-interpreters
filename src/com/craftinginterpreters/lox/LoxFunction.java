@@ -2,6 +2,8 @@ package com.craftinginterpreters.lox;
 
 import java.util.List;
 
+import com.craftinginterpreters.lox.Interpreter.ReturnException;
+
 /**
  * The class to hold our defined functions, implements LoxCallable so we can use call()
  */
@@ -31,7 +33,16 @@ public class LoxFunction implements LoxCallable {
         }
 
         // call interpreter function to execute block of code with function environment
-        i.executeBlock(function.code, funcEnv);
+        // if we hit a return statement before code execution finishes, this try/catch will
+        // return the specified value in the return statement
+        try {
+            i.executeBlock(function.code, funcEnv);
+        }
+        catch (ReturnException r) {
+            return r.returnValue;
+        }
+        
+        // by default functions return null (or nil in Lox)
         return null;
     }
 

@@ -20,6 +20,14 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
     // for breaks that aren't placed properly
     private static class BreakException extends RuntimeException {}
 
+    // for returning a value
+    public static class ReturnException extends RuntimeException {
+        final Object returnValue;
+        ReturnException(Object returnValue) {
+            this.returnValue = returnValue;
+        }
+    }
+
     Interpreter() {
         // instantiate native functions in global environment
         globals.addNewVariable("clock", new LoxCallable() {
@@ -54,6 +62,8 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
     }
 
     public void executeBlock(List<Statement> codeBlock, Environment env) {
+        // use a try/finally to ensure that the old environment is restored, no matter
+        // whether a exception is thrown from the execute() or not
         Environment oldEnv = currentEnv;
         try {
             currentEnv = env;
@@ -191,6 +201,12 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
         LoxFunction lf = new LoxFunction(statement);
         currentEnv.addNewVariable(statement.funcName.lexeme, lf);
         return null;
+    }
+
+    public Void visitReturnStatementStatement(Statement.ReturnStatement statement) {
+        Object returnValue = null;
+        if (statement.exp != null) returnValue = evaluate(statement.exp);
+        throw new ReturnException(returnValue);
     }
 
     // ================================= End Statement Visits ========================= //
