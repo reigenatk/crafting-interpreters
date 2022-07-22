@@ -25,3 +25,11 @@ for (var i = 0; i < 5; i = i + 1) {
     j = j + i;
 }
 print j; // 10?
+
+// test break statements
+var k;
+for (var i = 12; i > -5; i = i - 1) {
+    k = i;
+    if (i == 0) break;
+}
+print k; // should be 0

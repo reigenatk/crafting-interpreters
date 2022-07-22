@@ -17,6 +17,9 @@ public class Parser {
     // the next token waiting to be parsed
     private int current = 0;
 
+    // the number of loops deep that we are in. We need this for break statements
+    private int loopDepth = 0;
+
     Parser(List<Token> tokens) {
         this.tokens = tokens;
     }
@@ -75,6 +78,14 @@ public class Parser {
             return whileStatement();
         }
 
+        if (match(BREAK)) {
+            if (loopDepth == 0) {
+                // bad! We must be in a loop of some sort to break
+                error(previous(), "Break statement must be in a for or while loop to work");
+            }
+            return breakStatement();
+        }
+
         // for statement
         if (match(FOR)) {
             return forStatement();
@@ -120,11 +131,18 @@ public class Parser {
 
     // whileStmt → "while" "(" expression ")" statement 
     private Statement whileStatement() {
-        consume(LEFT_PAREN, "while statement missing '(' token");
-        Expression exp = expression();
-        consume(RIGHT_PAREN, "while statement missing ')' token");
-        Statement whileContents = statement();
-        return new Statement.WhileStatement(exp, whileContents);
+        try {
+            loopDepth++;
+            consume(LEFT_PAREN, "while statement missing '(' token");
+            Expression exp = expression();
+            consume(RIGHT_PAREN, "while statement missing ')' token");
+            Statement whileContents = statement();
+            return new Statement.WhileStatement(exp, whileContents);
+        }
+        finally {
+            loopDepth--;
+        }
+
     }
     // forStmt → "for" "(" ( varDecl | exprStmt | ";" ) expression? ";" expression? ")" statement ;
     // just an example, for (int i = 1; i < 3; i++)
@@ -132,57 +150,69 @@ public class Parser {
     // condition: "i < 3"
     // increment: "i++"
     private Statement forStatement() {
-        Statement initial = null;
-        consume(LEFT_PAREN, "for statement missing '(' token");
-        if (match(VAR)) {
-            initial = varDeclaration();
+        try {
+            loopDepth++;
+            Statement initial = null;
+            consume(LEFT_PAREN, "for statement missing '(' token");
+            if (match(VAR)) {
+                initial = varDeclaration();
+            }
+            else if (match(SEMICOLON)) {
+                // then no first part
+            }
+            else {
+                initial = expressionStatement();
+            }
+            Expression condition = null;
+            if (match(SEMICOLON)) {
+                // no second part
+            }
+            else {
+                condition = expression();
+                consume(SEMICOLON, "for statement missing ';' token");
+            }
+            Expression increment = null;
+            if (match(RIGHT_PAREN)) {
+                // no third part
+            }
+            else {
+                increment = expression();
+                consume(RIGHT_PAREN, "for statement missing ')' token");
+            }
+            Statement code = statement();
+    
+            // now we have to desugar the condition into a single Expression
+            // the increment is like a little code that runs after each iteration of a while loop
+            // we can represent that by making a Block statement and adding to the end the increment
+            // also we don't support ++ or anything so we should write it like "i = i+1" for now
+            if (increment != null) {
+                code = new Statement.BlockStatement(Arrays.asList(code, 
+                new Statement.ExpressionStatement(increment)));
+            }
+    
+            if (condition == null) condition = new Expression.Literal(true);
+            Statement body = new Statement.WhileStatement(condition, code);
+    
+            // the initial condition should run before the loop takes place
+            // furthermore it should be outside the whilestatement, since it only runs once
+            if (initial != null) {
+                body = new Statement.BlockStatement(Arrays.asList( 
+                initial, body));
+            }
+    
+            // so to summarize, a For loop is just a While loop on a block statement with
+            // an initial condition before it, and a nested increment block inside
+            return body;
         }
-        else if (match(SEMICOLON)) {
-            // then no first part
+        finally {
+            loopDepth--;
         }
-        else {
-            initial = expressionStatement();
-        }
-        Expression condition = null;
-        if (match(SEMICOLON)) {
-            // no second part
-        }
-        else {
-            condition = expression();
-            consume(SEMICOLON, "for statement missing ';' token");
-        }
-        Expression increment = null;
-        if (match(RIGHT_PAREN)) {
-            // no third part
-        }
-        else {
-            increment = expression();
-            consume(RIGHT_PAREN, "for statement missing ')' token");
-        }
-        Statement code = statement();
+        
+    }
 
-        // now we have to desugar the condition into a single Expression
-        // the increment is like a little code that runs after each iteration of a while loop
-        // we can represent that by making a Block statement and adding to the end the increment
-        // also we don't support ++ or anything so we should write it like "i = i+1" for now
-        if (increment != null) {
-            code = new Statement.BlockStatement(Arrays.asList(code, 
-            new Statement.ExpressionStatement(increment)));
-        }
-
-        if (condition == null) condition = new Expression.Literal(true);
-        Statement body = new Statement.WhileStatement(condition, code);
-
-        // the initial condition should run before the loop takes place
-        // furthermore it should be outside the whilestatement, since it only runs once
-        if (initial != null) {
-            body = new Statement.BlockStatement(Arrays.asList( 
-            initial, body));
-        }
-
-        // so to summarize, a For loop is just a While loop on a block statement with
-        // an initial condition before it, and a nested increment block inside
-        return body;
+    private Statement breakStatement() {
+        consume(SEMICOLON, "Break Statement must end with a semicolon");
+        return new Statement.BreakStatement();
     }
 
     // block → "{" declaration* "}" ;

@@ -34,7 +34,8 @@ public class GenerateAST {
             "VariableDeclaration : Token name, Expression initializer",
             "BlockStatement: List<Statement> statements",
             "IfStatement: Expression condition, Statement ifCode, Statement elseCode",
-            "WhileStatement: Expression condition, Statement code"
+            "WhileStatement: Expression condition, Statement code",
+            "BreakStatement: "
         ));
     }
 
@@ -71,7 +72,14 @@ public class GenerateAST {
             String arguments = splitted[1].trim();
             p.println("\tstatic class " + productionName + " extends " + baseName + " {");
 
-            String[] splittedArgs = arguments.split(", ");
+            String[] splittedArgs;
+            if (arguments.isEmpty()) {
+                splittedArgs = new String[0];
+            }
+            else {
+                splittedArgs = arguments.split(", ");
+            }
+
             // instance variables
             for (String field : splittedArgs) {
                 p.println("\t\tfinal " + field + ";");

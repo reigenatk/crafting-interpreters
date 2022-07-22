@@ -13,6 +13,9 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
     // the current innermost scope's environment
     private Environment currentEnv = new Environment();
 
+    // for breaks that aren't placed properly
+    private static class BreakException extends RuntimeException {}
+
     // evaluate calls accept, which then depending on which expression e is,
     // calls one of the visit methods below.
     private Object evaluate(Expression s) {
@@ -140,9 +143,21 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
     public Void visitWhileStatementStatement(Statement.WhileStatement statement) {
         while (isTruthy(evaluate(statement.condition))) {
             // then execute all the statements in the if block
-            execute(statement.code);
+            // also if any break statements occur then they will throw a BreakException
+            // we can then put a try catch here to immediately terminate the loop if such an exception occurs
+            try {
+                execute(statement.code);
+            }
+            catch (BreakException b) {
+                return null;
+            }
         }
         return null;
+    }
+
+    // when visiting a break, we throw an exception immediately to exit the loop that we're in
+    public Void visitBreakStatementStatement(Statement.BreakStatement statement) {
+        throw new BreakException();
     }
 
     // ================================= End Statement Visits ========================= //

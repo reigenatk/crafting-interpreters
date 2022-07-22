@@ -11,6 +11,7 @@ abstract class Statement {
 		R visitBlockStatementStatement(BlockStatement statement);
 		R visitIfStatementStatement(IfStatement statement);
 		R visitWhileStatementStatement(WhileStatement statement);
+		R visitBreakStatementStatement(BreakStatement statement);
 	}
 	static class ExpressionStatement extends Statement {
 		final Expression expression;
@@ -90,6 +91,16 @@ abstract class Statement {
 		WhileStatement(Expression condition, Statement code) {
 			this.condition = condition;
 			this.code = code;
+		}
+	}
+	static class BreakStatement extends Statement {
+
+		@Override
+		<R> R accept(Visitor<R> visitor) {
+			return visitor.visitBreakStatementStatement(this);
+		}
+
+		BreakStatement() {
 		}
 	}
 
