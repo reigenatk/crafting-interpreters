@@ -1,5 +1,6 @@
 package com.craftinginterpreters.lox;
 
+import java.lang.Thread.State;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Arrays;
@@ -89,6 +90,11 @@ public class Parser {
         // for statement
         if (match(FOR)) {
             return forStatement();
+        }
+
+        // function DECLARATION
+        if (match(FUN)) {
+            return functionDeclaration();
         }
 
         // expression statement
@@ -208,6 +214,44 @@ public class Parser {
             loopDepth--;
         }
         
+    }
+
+    // funDecl → "fun" function ;
+    private Statement functionDeclaration() {
+        return function("function");
+    }
+
+    // function → IDENTIFIER "(" parameters? ")" block
+    private Statement function(String kind_of_function) {
+        Token funcName = consume(IDENTIFIER, "New " + kind_of_function + " must have a name");
+        consume(LEFT_PAREN, "New function defienition must have (");
+
+        List<Token> params = new ArrayList<>();
+
+        // consume parameters, so in something like fun stuff(a,b,c) {} its the "a,b,c" part
+        // first check to see if we even have arguments
+        if (!check(RIGHT_PAREN)) {
+            Token param = advance();
+            params.add(param);
+            while (match(COMMA)) {
+                param = advance();
+                params.add(param);
+
+                // check that again not more than 255 args, if so, make sure to print an error
+                if (params.size() >= 255) {
+                    error(peek(), "Cannot have more than 255 arguments in function definition");
+                }
+            }
+        }
+        else {
+            // no arguments
+        }
+        consume(RIGHT_PAREN, "Missing matching ')' for function definition parameters");
+
+        // little tricky, dont forget to consume { since block() expects it to be consumed
+        consume(LEFT_BRACE, "Expecting function body starting with {");
+        List<Statement> functionCode = block();
+        return new Statement.FunctionStatement(funcName, params, functionCode);
     }
 
     private Statement breakStatement() {
@@ -341,7 +385,7 @@ public class Parser {
         return first_unary;
     }
 
-    // unary → ( "!" | "-" ) unary | primary ;
+    // unary → ( "!" | "-" ) unary | call ;
     private Expression unary() {
         if (match(BANG, MINUS)) {
             Token t = previous();
@@ -349,9 +393,42 @@ public class Parser {
             return new Expression.Unary(t, first_unary);
         }
         else {
-            return primary();
+            return call();
         }
     }
+
+    // call → primary ( "(" arguments? ")" )* 
+    private Expression call() {
+        Expression e = primary();
+        while (match(LEFT_PAREN)) {
+            // recursively create the expression (nested), kinda like how we did for loops
+            e = arguments(e);
+        }
+        return e;
+    }
+
+    // arguments → expression ( "," expression )* 
+    private Expression arguments(Expression e) {
+        List<Expression> args = new ArrayList<Expression>();
+
+        // if there are even arguments
+        if (peek().type != RIGHT_PAREN) {
+            Expression arg1 = expression();
+            args.add(arg1);
+            while (match(COMMA)) {
+                if (args.size() >= 255) {
+                    error(peek(), "Cannot have more than 255 arguments");
+                }
+                Expression arg2 = expression();
+                args.add(arg2);
+            }
+        }
+
+        // match closing paren for this call
+        Token rightParen = consume(RIGHT_PAREN, "function call arguments not terminated with )");
+        return new Expression.Call(e, args, rightParen);
+    }
+
     // primary → NUMBER | STRING | "true" |
     private Expression primary() {
         // these keywords don't have value assigned to them from Scanner

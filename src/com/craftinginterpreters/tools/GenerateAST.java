@@ -24,7 +24,8 @@ public class GenerateAST {
         "Unary : Token operator, Expression right",
         "Variable: Token name",
         "Assignment: Token name, Expression value",
-        "Logical: Expression left, Token operator, Expression right"
+        "Logical: Expression left, Token operator, Expression right",
+        "Call: Expression callee, List<Expression> args, Token closingParenthesis"
         ));
 
         // a statement is a superset of expressions. You can have expressions inside of statements
@@ -35,7 +36,9 @@ public class GenerateAST {
             "BlockStatement: List<Statement> statements",
             "IfStatement: Expression condition, Statement ifCode, Statement elseCode",
             "WhileStatement: Expression condition, Statement code",
-            "BreakStatement: "
+            "BreakStatement: ",
+            "FunctionStatement: Token funcName, List<Token> args, List<Statement> code",
+            "ReturnStatement: Expression exp"
         ));
     }
 

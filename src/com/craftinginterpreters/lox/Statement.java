@@ -12,6 +12,7 @@ abstract class Statement {
 		R visitIfStatementStatement(IfStatement statement);
 		R visitWhileStatementStatement(WhileStatement statement);
 		R visitBreakStatementStatement(BreakStatement statement);
+		R visitFunctionStatementStatement(FunctionStatement statement);
 	}
 	static class ExpressionStatement extends Statement {
 		final Expression expression;
@@ -101,6 +102,22 @@ abstract class Statement {
 		}
 
 		BreakStatement() {
+		}
+	}
+	static class FunctionStatement extends Statement {
+		final Token funcName;
+		final List<Token> args;
+		final List<Statement> code;
+
+		@Override
+		<R> R accept(Visitor<R> visitor) {
+			return visitor.visitFunctionStatementStatement(this);
+		}
+
+		FunctionStatement(Token funcName, List<Token> args, List<Statement> code) {
+			this.funcName = funcName;
+			this.args = args;
+			this.code = code;
 		}
 	}
 

@@ -1,6 +1,7 @@
 package com.craftinginterpreters.lox;
 import static com.craftinginterpreters.lox.TokenType.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 // this marks the beginning of the RUNTIME
@@ -10,11 +11,34 @@ import java.util.List;
 // this allows for dynamic typing, meaning we only resolve types here.
 public class Interpreter implements Expression.Visitor<Object>, Statement.Visitor<Void> {
 
-    // the current innermost scope's environment
-    private Environment currentEnv = new Environment();
+    // the global environment, with our native functions and variables in it
+    final public Environment globals = new Environment();
+
+    // the current innermost scope's environment (initially set to globals)
+    public Environment currentEnv = globals;
 
     // for breaks that aren't placed properly
     private static class BreakException extends RuntimeException {}
+
+    Interpreter() {
+        // instantiate native functions in global environment
+        globals.addNewVariable("clock", new LoxCallable() {
+            @Override
+            public int arity() {
+                return 0;
+            }
+
+            @Override
+            public Object call(Interpreter i, List<Object> args) {
+                return (double) System.currentTimeMillis() / 1000.0; // seconds since Unix Epoch
+            }
+
+            @Override
+            public String toString() {
+                return "<native function \"clock\">";
+            }
+        });
+    }
 
     // evaluate calls accept, which then depending on which expression e is,
     // calls one of the visit methods below.
@@ -27,6 +51,19 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
     // accept (aka actually do the visitor pattern) with for statements
     private void execute(Statement s) {
         s.accept(this);
+    }
+
+    public void executeBlock(List<Statement> codeBlock, Environment env) {
+        Environment oldEnv = currentEnv;
+        try {
+            currentEnv = env;
+            for (Statement codeLine : codeBlock) {
+                execute(codeLine);
+            }
+        }
+        finally {
+            currentEnv = oldEnv;
+        }
     }
 
     // this takes in a list of statements, otherwise known as a program
@@ -98,23 +135,8 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
     // the variables in this scope.
     @Override
     public Void visitBlockStatementStatement(Statement.BlockStatement statement) {
-        // store the old environment since we gotta restore it later
-        Environment previousEnv = this.currentEnv;
-        
-        try {
-            // make a new environment for this new block (with current env as parent)
-            Environment blockEnv = new Environment(this.currentEnv);
-            // set current environment to block environment
-            this.currentEnv = blockEnv;
-
-            for (Statement s : statement.statements) {
-                execute(s);
-            }
-        }
-        finally {
-            // restore old environment
-            this.currentEnv = previousEnv;
-        }
+        Environment blockEnv = new Environment(this.currentEnv);
+        executeBlock(statement.statements, blockEnv);
         return null;
     }
 
@@ -158,6 +180,17 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
     // when visiting a break, we throw an exception immediately to exit the loop that we're in
     public Void visitBreakStatementStatement(Statement.BreakStatement statement) {
         throw new BreakException();
+    }
+
+    // declaring a function with its definition. Just put the LoxFunction object into the 
+    // current environment, and when function call happens it will use visitVariableExpression()
+    // internally to resolve the name of the function back to the LoxFunction
+    // in other words, functions are just like variables in that we store them in environment upon 
+    // declaration!
+    public Void visitFunctionStatementStatement(Statement.FunctionStatement statement) {
+        LoxFunction lf = new LoxFunction(statement);
+        currentEnv.addNewVariable(statement.funcName.lexeme, lf);
+        return null;
     }
 
     // ================================= End Statement Visits ========================= //
@@ -289,6 +322,36 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
 
         // ooo this is interesting
         return evaluate(expression.right);
+    }
+
+    // calling a function!
+    public Object visitCallExpression(Expression.Call expression) {
+        List<Expression> args = expression.args;
+
+        // evaluate each paramter!
+        List<Object> argsEvaluated = new ArrayList<>();
+        for (Expression e : args) {
+            Object o = evaluate(e);
+            argsEvaluated.add(o);
+        }
+
+        // evaluate the callee, also known as the name of the function
+        Object callee = evaluate(expression.callee);
+
+        // cast it to a LoxCallable (but first check that it is an actual function we defined already in Lox)
+        if (!(callee instanceof LoxCallable)) {
+            throw new RuntimeError(expression.closingParenthesis, "Callee is not valid function name");
+        }
+
+        LoxCallable function = (LoxCallable) callee;
+
+        // make sure the number of arguments are the same, if not throw runtime error
+        if (args.size() != function.arity()) {
+            throw new RuntimeError(expression.closingParenthesis, "Number of arguments must be " + 
+            function.arity() + " but got " + args.size() + " arguments instead");
+        }
+
+        return function.call(this, argsEvaluated);
     }
 
     // ================================= End Expression Visits ========================= //

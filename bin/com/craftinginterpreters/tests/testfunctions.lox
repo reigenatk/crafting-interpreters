@@ -1,0 +1,17 @@
+fun testfunction(a, b, c) {
+    a = b + c;
+    b = b + 2;
+    c = 30;
+    fun nestedFunc(d,e) {
+        d = d + 5;
+        e = e + 10;
+        print d; // 57
+        print e; // 40
+    }
+    print a; // 70
+    print b; // 52
+    print c; // 30
+    nestedFunc(b, c);
+}
+
+testfunction(10, 50, 20);

@@ -12,6 +12,7 @@ abstract class Expression {
 		R visitVariableExpression(Variable expression);
 		R visitAssignmentExpression(Assignment expression);
 		R visitLogicalExpression(Logical expression);
+		R visitCallExpression(Call expression);
 	}
 	static class Binary extends Expression {
 		final Expression left;
@@ -107,6 +108,22 @@ abstract class Expression {
 			this.left = left;
 			this.operator = operator;
 			this.right = right;
+		}
+	}
+	static class Call extends Expression {
+		final Expression callee;
+		final List<Expression> args;
+		final Token closingParenthesis;
+
+		@Override
+		<R> R accept(Visitor<R> visitor) {
+			return visitor.visitCallExpression(this);
+		}
+
+		Call(Expression callee, List<Expression> args, Token closingParenthesis) {
+			this.callee = callee;
+			this.args = args;
+			this.closingParenthesis = closingParenthesis;
 		}
 	}
 
