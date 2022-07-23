@@ -192,13 +192,15 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
         throw new BreakException();
     }
 
-    // declaring a function with its definition. Just put the LoxFunction object into the 
-    // current environment, and when function call happens it will use visitVariableExpression()
-    // internally to resolve the name of the function back to the LoxFunction
-    // in other words, functions are just like variables in that we store them in environment upon 
-    // declaration!
+    // declaring a function with its definition.
     public Void visitFunctionStatementStatement(Statement.FunctionStatement statement) {
-        LoxFunction lf = new LoxFunction(statement);
+        // grab the current env
+        Environment funcEnv = new Environment(currentEnv);
+
+        // set it to be the closure of the function (also pass the funcstatement in)
+        LoxFunction lf = new LoxFunction(statement, funcEnv);
+
+        // define the function object itself into current environment
         currentEnv.addNewVariable(statement.funcName.lexeme, lf);
         return null;
     }

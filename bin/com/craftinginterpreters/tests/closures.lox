@@ -1,0 +1,22 @@
+// a breakdown of how this is working
+
+// "fun makeCounter()" creates makeCounter in global env, create env1 with parent global, sets to makeCounter's closure
+// create's env2 as well and sets env1 as parent, and "var i = 0" is defined in that closure
+// count() function is also defined in env2, count() function's closure is set to env3 with env2 as parent
+// return count; returns env2.getVariable(count) which is a LoxFunction object
+// counter is set in globalscope to the same LoxFunction object
+// counter() invocations will trigger call() function on LoxFunction object, which takes env3, the closure of count()
+// and creates a new scope env4 with env3 as parent. Then when access to i = i+1 is made, it checks 
+// env4 (doesnt know) -> env3 (doesnt know) -> env2 where i was defined, and knows its 0.
+
+fun makeCounter() { 
+ var i = 0; // create 
+ fun count() {
+ i = i + 1;
+ print i;
+ }
+ return count;
+}
+var counter = makeCounter();
+counter(); // "1".
+counter(); // "2".

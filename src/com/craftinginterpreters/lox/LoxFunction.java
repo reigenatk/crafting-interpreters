@@ -9,9 +9,14 @@ import com.craftinginterpreters.lox.Interpreter.ReturnException;
  */
 public class LoxFunction implements LoxCallable {
 
+    // this has the args, name of function, and code inside the function
     private final Statement.FunctionStatement function;
 
-    LoxFunction(Statement.FunctionStatement f) {
+    // this will hold the last environment that this function had, or initialize it if not yet made
+    private final Environment closure;
+
+    LoxFunction(Statement.FunctionStatement f, Environment closure) {
+        this.closure = closure;
         function = f;
     }
 
@@ -24,8 +29,9 @@ public class LoxFunction implements LoxCallable {
     // represents a function execution
     @Override
     public Object call(Interpreter i, List<Object> args) {
-        // create a new environment for this function execution
-        Environment funcEnv = new Environment(i.currentEnv);
+
+        // define a new environment for func execution that has closure as parent env
+        Environment funcEnv = new Environment(closure);
 
         // define all the parameters in this new environment
         for (int j = 0; j < args.size(); j++) {
