@@ -66,7 +66,7 @@ public class Lox {
         }
     }
 
-    // THIS IS THE IMPORTANT STUFF
+    // THIS IS THE MAIN LOOP, VERY IMPORTANT
     private static void run(String input_string) {
         // pass each line to the scanner to be lexed
         Scanner scanner = new Scanner(input_string);
@@ -78,16 +78,23 @@ public class Lox {
 
         // pass list of tokens to parser
         Parser parser = new Parser(tokens);
-        List<Statement> exp = parser.parse();
+        List<Statement> statements = parser.parse();
 
         // if there was an error on this line, don't print
         if (hadError) return;
 
         // print out the abstract syntax tree that the parser sees
-        // System.out.println(new AstPrinter().print(exp));
+        // System.out.println(new AstPrinter().print(statements));
+
+        // run resolver (populates locals hashmap in Interpreter)
+        Resolver r = new Resolver(interpreter);
+        r.resolve(statements);
+
+        // check for resolver errors, if there are any, don't interpret
+        if (hadError) return;
 
         // try to evaluate the syntax tree
-        interpreter.interpret(exp);
+        interpreter.interpret(statements);
 
         // check for runtime errors
         if (hadRuntimeError) return;

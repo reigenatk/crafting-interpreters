@@ -261,6 +261,7 @@ public class Parser {
 
     // returnStmt → "return" expression? ";" 
     private Statement returnStatement() {
+        Token returnKeyword = previous();
         Expression e = null;
         if (check(SEMICOLON)) {
             // then its just "return;"
@@ -269,7 +270,7 @@ public class Parser {
             e = expression();
         }
         consume(SEMICOLON, "Missing semicolon after return statement");
-        return new Statement.ReturnStatement(e);
+        return new Statement.ReturnStatement(returnKeyword, e);
     }
 
     private Statement breakStatement() {

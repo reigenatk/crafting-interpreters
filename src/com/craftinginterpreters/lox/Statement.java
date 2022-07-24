@@ -122,6 +122,7 @@ abstract class Statement {
 		}
 	}
 	static class ReturnStatement extends Statement {
+		final Token returnKeyword;
 		final Expression exp;
 
 		@Override
@@ -129,7 +130,8 @@ abstract class Statement {
 			return visitor.visitReturnStatementStatement(this);
 		}
 
-		ReturnStatement(Expression exp) {
+		ReturnStatement(Token returnKeyword, Expression exp) {
+			this.returnKeyword = returnKeyword;
 			this.exp = exp;
 		}
 	}

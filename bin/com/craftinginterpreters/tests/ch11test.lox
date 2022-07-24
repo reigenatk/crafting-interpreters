@@ -1,0 +1,19 @@
+var a = "global";
+{
+ fun showA() {
+ print a;
+ }
+ showA();
+ var a = "block";
+ showA();
+}
+
+// should print global twice
+// ok so before chapter 11 this prints "global" then "block", which is apparently incorrect.
+// After chapter 11, it prints global twice which is correct. 
+
+// flow goes like this
+// first line calls declare() and define() "a", but since scopes stack is empty it does nothing
+// block statement adds scope onto stack in resolver.java
+// showA is defined
+// print statement calls resolve on "a", we search all scopes 

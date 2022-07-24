@@ -38,7 +38,7 @@ public class GenerateAST {
             "WhileStatement: Expression condition, Statement code",
             "BreakStatement: ",
             "FunctionStatement: Token funcName, List<Token> args, List<Statement> code",
-            "ReturnStatement: Expression exp"
+            "ReturnStatement: Token returnKeyword, Expression exp"
         ));
     }
 

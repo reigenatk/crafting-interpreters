@@ -2,6 +2,7 @@ package com.craftinginterpreters.lox;
 import static com.craftinginterpreters.lox.TokenType.*;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 // this marks the beginning of the RUNTIME
@@ -28,8 +29,11 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
         }
     }
 
+    // for resolving symbols in current scope
+    HashMap<Expression, Integer> locals = new HashMap<>();
+
     Interpreter() {
-        // instantiate native functions in global environment
+        // instantiate some native functions in global environment
         globals.addNewVariable("clock", new LoxCallable() {
             @Override
             public int arity() {
@@ -89,21 +93,12 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
         }
     }
 
-    // converting Java back to Lox (null in Java is nil in Lox)
-    // also making sure there's no .0 at the end for integers
-    // since in Lox we're representing all numbers as doubles, integers will 
-    // appears as 3.0 for example, and we don't want to output that. We want "3"
-    private String stringify(Object object) {
-        if (object == null) return "nil";
-        if (object instanceof Double) {
-            String text = object.toString();
-            if (text.endsWith(".0")) {
-                text = text.substring(0, text.length() - 2);
-            }
-            return text;
-        }
-        return object.toString();
+    // for the resolver. This is called by the Resolver.resolveLocal function to tell interpreter
+    // which local variables corresponds to which other variables
+    public void resolve(Expression exp, int numberOfScopes) {
+        locals.put(exp, numberOfScopes);
     }
+
     // ================================= Start Statement Visits ========================= //
     
     // this is something like "3+4;" and in that case we just evaluate it and move on. 
@@ -145,7 +140,9 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
     // the variables in this scope.
     @Override
     public Void visitBlockStatementStatement(Statement.BlockStatement statement) {
+        // create a new env
         Environment blockEnv = new Environment(this.currentEnv);
+
         executeBlock(statement.statements, blockEnv);
         return null;
     }
@@ -194,11 +191,9 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
 
     // declaring a function with its definition.
     public Void visitFunctionStatementStatement(Statement.FunctionStatement statement) {
-        // grab the current env
-        Environment funcEnv = new Environment(currentEnv);
 
         // set it to be the closure of the function (also pass the funcstatement in)
-        LoxFunction lf = new LoxFunction(statement, funcEnv);
+        LoxFunction lf = new LoxFunction(statement, currentEnv);
 
         // define the function object itself into current environment
         currentEnv.addNewVariable(statement.funcName.lexeme, lf);
@@ -307,14 +302,36 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
     // assuming "var x = 3" was ran before this, then doing "x;" a line later should return 3
     @Override
     public Object visitVariableExpression(Expression.Variable expression) {
-        return currentEnv.getVariableValue(expression.name);
+        // lookup the variable in the resolver map
+        // dist is the number of scopes up that we need to travel
+        Integer dist = locals.get(expression);
+        if (dist == null) {
+            System.out.println("Variable " + expression + " is global");
+            // if dist is null then that means it wasn't resolved 
+            // which means that variable is in globals
+            return globals.getVariableValue(expression.name);
+        }
+        else {
+            // var is local, just use the getAt to go up the scope linked list
+            return currentEnv.getAt(expression.name.lexeme, dist);
+        }
     }
 
     // something like "x=3;" returns 3 believe it or not
     @Override
     public Object visitAssignmentExpression(Expression.Assignment expression) {
         Object rhs = evaluate(expression.value);
-        currentEnv.changeExistingVariable(expression.name, rhs);
+        Integer dist = locals.get(expression);
+
+        if (dist == null) {
+            // global variable
+            globals.changeExistingVariable(expression.name, rhs);
+        }
+        else {
+            // local variable
+            currentEnv.setAt(expression.name.lexeme, dist, rhs);
+        }
+        
         return rhs;
     }
 
@@ -408,4 +425,21 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
         }
         return true;
     }
+
+    // converting Java back to Lox (null in Java is nil in Lox)
+    // also making sure there's no .0 at the end for integers
+    // since in Lox we're representing all numbers as doubles, integers will 
+    // appears as 3.0 for example, and we don't want to output that. We want "3"
+    private String stringify(Object object) {
+        if (object == null) return "nil";
+        if (object instanceof Double) {
+            String text = object.toString();
+            if (text.endsWith(".0")) {
+                text = text.substring(0, text.length() - 2);
+            }
+            return text;
+        }
+        return object.toString();
+    }
+    
 }

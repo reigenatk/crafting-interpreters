@@ -23,6 +23,9 @@ public class Environment {
     }
 
     public void addNewVariable(String varName, Object val) {
+        if (variableToValue.containsKey(varName)) {
+            System.out.println("Variable redefinition error: " + varName + " is already taken.");
+        }
         variableToValue.put(varName, val);
     }
 
@@ -53,5 +56,22 @@ public class Environment {
             }
         }
         variableToValue.put(varName.lexeme, val);
+    }
+
+    public Object getAt(String varName, Integer distance) {
+        if (distance == 0) {
+            return variableToValue.get(varName);
+        }
+        else {
+            return parentEnv.getAt(varName, distance-1);
+        }
+    }
+    public void setAt(String varName, Integer distance, Object val) {
+        if (distance == 0) {
+            variableToValue.put(varName, val);
+        }
+        else {
+            parentEnv.setAt(varName, distance-1, val);
+        }
     }
 }

@@ -1,0 +1,4 @@
+var a = "outer";
+{
+ var a = a; // this should error since we are tryin to access the variable we are defining.
+}
