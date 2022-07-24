@@ -13,6 +13,8 @@ abstract class Expression {
 		R visitAssignmentExpression(Assignment expression);
 		R visitLogicalExpression(Logical expression);
 		R visitCallExpression(Call expression);
+		R visitGetExpression(Get expression);
+		R visitSetExpression(Set expression);
 	}
 	static class Binary extends Expression {
 		final Expression left;
@@ -124,6 +126,36 @@ abstract class Expression {
 			this.callee = callee;
 			this.args = args;
 			this.closingParenthesis = closingParenthesis;
+		}
+	}
+	static class Get extends Expression {
+		final Expression object;
+		final Token name;
+
+		@Override
+		<R> R accept(Visitor<R> visitor) {
+			return visitor.visitGetExpression(this);
+		}
+
+		Get(Expression object, Token name) {
+			this.object = object;
+			this.name = name;
+		}
+	}
+	static class Set extends Expression {
+		final Expression object;
+		final Token name;
+		final Expression value;
+
+		@Override
+		<R> R accept(Visitor<R> visitor) {
+			return visitor.visitSetExpression(this);
+		}
+
+		Set(Expression object, Token name, Expression value) {
+			this.object = object;
+			this.name = name;
+			this.value = value;
 		}
 	}
 

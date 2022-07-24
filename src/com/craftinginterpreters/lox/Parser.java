@@ -3,6 +3,9 @@ package com.craftinginterpreters.lox;
 import java.lang.Thread.State;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.craftinginterpreters.lox.Statement.FunctionStatement;
+
 import java.util.Arrays;
 
 
@@ -42,6 +45,16 @@ public class Parser {
             // if variable declaration like "var x = 3;"
             if (match(VAR)) {
                 return varDeclaration();
+            }
+
+            // function DECLARATION
+            if (match(FUN)) {
+                return functionDeclaration();
+            }
+
+            // class declaration
+            if (match(CLASS)) {
+                return classDeclaration();
             }
 
             // else if just statement (either print or exp statement)
@@ -90,11 +103,6 @@ public class Parser {
         // for statement
         if (match(FOR)) {
             return forStatement();
-        }
-
-        // function DECLARATION
-        if (match(FUN)) {
-            return functionDeclaration();
         }
 
         // return statements
@@ -226,8 +234,25 @@ public class Parser {
         return function("function");
     }
 
+    // classDecl → "class" IDENTIFIER "{" function* "}" 
+    private Statement classDeclaration() {
+        Token nameOfClass = consume(IDENTIFIER, "Expecting class name after 'class' keyword");
+        consume(LEFT_BRACE, "Expecting '{' character");
+
+        // here we gonna be specific and say List of FunctionStatements since function()
+        // can only return FunctionStatements anyways
+        List<FunctionStatement> classMethods = new ArrayList<FunctionStatement>();
+        while (!check(RIGHT_BRACE) && !isAtEnd()) {
+            FunctionStatement method = function("method");
+            classMethods.add(method);
+        }
+
+        consume(RIGHT_BRACE, "Expecting '}' character after class methods");
+        return new Statement.ClassDeclaration(nameOfClass, classMethods);
+    }
+
     // function → IDENTIFIER "(" parameters? ")" block
-    private Statement function(String kind_of_function) {
+    private FunctionStatement function(String kind_of_function) {
         Token funcName = consume(IDENTIFIER, "New " + kind_of_function + " must have a name");
         consume(LEFT_PAREN, "New function defienition must have (");
 
@@ -307,12 +332,11 @@ public class Parser {
         return assignment();
     }
 
-    // assignment → IDENTIFIER "=" assignment | logic_or
+    // assignment → ( call "." )? IDENTIFIER "=" assignment | logic_or ;
     // this one's tricky, check out page 122 for explanation
     // essentially though we parse stuff before the equals sign as an expression
-    // check if its a variable, if it is then we grab its token
+    // then we check the type of the lhs expression.
     // and we evaluate rhs, then create the new Expression.Assignment()
-    // and if no equals sign then OK its just equality()
     // the reason we have to do it this way is because LHS could be complex
     // like x.y.z or something, and that is also a valid expression statement so we can abuse that
     private Expression assignment() {
@@ -326,9 +350,15 @@ public class Parser {
                 Token variable = variableName.name;
                 return new Expression.Assignment(variable, rhs);
             }
+            else if (lhs instanceof Expression.Get) {
+                // if previous expression is get, we know its obj.value, and since set is just obj.value = x
+                // then we can reuse the obj and value parts, and x is just rhs
+                Expression.Get lhsget = (Expression.Get) lhs;
+                return new Expression.Set(lhsget.object, lhsget.name, rhs);
+            }
             else {
                 // invalid assignment statement
-                error(equalsToken, "Invalid assignment");
+                error(equalsToken, "Invalid assignment target");
             }
         }
         return lhs;
@@ -416,12 +446,25 @@ public class Parser {
         }
     }
 
-    // call → primary ( "(" arguments? ")" )* 
+    // call → primary ( "(" arguments? ")" | "." IDENTIFIER )* ;
     private Expression call() {
         Expression e = primary();
-        while (match(LEFT_PAREN)) {
-            // recursively create the expression (nested), kinda like how we did for loops
-            e = arguments(e);
+
+        // match as many arguments and class accesses as we can on repeat until no more!
+        while (true) {
+            if (match(LEFT_PAREN)) {
+                // recursively create the expression (nested), kinda like how we did for loops
+                e = arguments(e);
+            }
+            else if (match(DOT)) {
+                // check if its a class method access (aka .)
+                // if it is, bundle up the current object with this member access
+                Token memberName = advance();
+                e = new Expression.Get(e, memberName);
+            }
+            else {
+                break;
+            }
         }
         return e;
     }

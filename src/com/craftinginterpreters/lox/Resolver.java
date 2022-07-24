@@ -23,7 +23,8 @@ public class Resolver implements Expression.Visitor<Void>, Statement.Visitor<Voi
 
     private enum FunctionType {
         NONE,
-        FUNCTION
+        FUNCTION,
+        METHOD
     }
 
     Resolver(Interpreter i) {
@@ -176,7 +177,21 @@ public class Resolver implements Expression.Visitor<Void>, Statement.Visitor<Voi
         resolveFunction(statement, FunctionType.FUNCTION);
         return null;
     }
-    // =============================== All other visits =================================== //
+
+    @Override
+    public Void visitClassDeclarationStatement(ClassDeclaration statement) {
+        // we must declare/define the class in this scope
+        declare(statement.nameOfClass);
+        define(statement.nameOfClass);
+
+        // resolve all the methods
+        for (FunctionStatement f : statement.methods) {
+            resolveFunction(f, FunctionType.METHOD);
+        }
+        return null;
+    }
+
+    // ===================== All other visits, most of these just call resolve() ===================== //
     @Override
     public Void visitExpressionStatementStatement(ExpressionStatement statement) {
         resolve(statement.expression);
@@ -260,4 +275,24 @@ public class Resolver implements Expression.Visitor<Void>, Statement.Visitor<Voi
     public Void visitBreakStatementStatement(BreakStatement statement) {
         return null;
     }
+
+    @Override
+    public Void visitGetExpression(Get expression) {
+        resolve(expression.object);
+        return null;
+    }
+
+    /*
+     * Again, like Expr.Get, the property itself is dynamically evaluated, so there’s
+       nothing to resolve there. All we need to do is recurse into the two
+       subexpressions of Expr.Set, the object whose property is being set, and the value
+       it’s being set to
+     */
+    @Override
+    public Void visitSetExpression(Set expression) {
+        resolve(expression.value);
+        resolve(expression.object);
+        return null;
+    }
+
 }

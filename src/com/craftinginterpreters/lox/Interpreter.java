@@ -4,6 +4,11 @@ import static com.craftinginterpreters.lox.TokenType.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import com.craftinginterpreters.lox.Expression.Get;
+import com.craftinginterpreters.lox.Expression.Set;
+import com.craftinginterpreters.lox.Statement.ClassDeclaration;
 
 // this marks the beginning of the RUNTIME
 // the class that actually takes the expressions from the syntax tree
@@ -206,8 +211,30 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
         throw new ReturnException(returnValue);
     }
 
-    // ================================= End Statement Visits ========================= //
+    @Override
+    public Void visitClassDeclarationStatement(ClassDeclaration statement) {
+        
+        // first define the class to be null
+        currentEnv.addNewVariable(statement.nameOfClass.lexeme, null);
 
+        // parse all the methods by transforming the FunctionStatement into a LoxFunction 
+        // (the runtime representation of a function)
+        // we will pass in map to LoxClass constructor
+        Map<String, LoxFunction> methods = new HashMap<>();
+        for (Statement.FunctionStatement f : statement.methods) {
+            LoxFunction lf = new LoxFunction(f, currentEnv);
+            methods.put(f.funcName.lexeme, lf);
+        }
+
+        LoxClass lc = new LoxClass(statement.nameOfClass.lexeme, methods);
+        
+        // now bind the runtime class object to the name
+        currentEnv.changeExistingVariable(statement.nameOfClass, lc);
+
+        return null;
+    }
+
+    // ================================= End Statement Visits ========================= //
 
     // ================================= Start Expression Visits ========================= //
 
@@ -387,6 +414,38 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
         }
 
         return function.call(this, argsEvaluated);
+    }
+
+    // something like class.method
+    @Override
+    public Object visitGetExpression(Get expression) {
+        Object lhs = evaluate(expression.object);
+
+        // lhs should be an instance of a class, but check just in case its not
+        if (lhs instanceof LoxInstance) {
+            LoxInstance instance = (LoxInstance) lhs;
+
+            // get the desired LoxFunction
+            return instance.getField(expression.name);
+        }
+
+        throw new RuntimeError(expression.name, "Must access member on instance of a class");
+
+    }
+
+    // obj.property = value. this still returns value!
+    @Override
+    public Object visitSetExpression(Set expression) {
+        Object lhs = evaluate(expression.object);
+        if (lhs instanceof LoxInstance) {
+            LoxInstance instance = (LoxInstance) lhs;
+            Object newValue = evaluate(expression.value);
+            // get the desired LoxFunction
+            instance.setField(expression.name, newValue);
+            return newValue;
+        }
+
+        throw new RuntimeError(expression.name, "Must set member on instance of a class");
     }
 
     // ================================= End Expression Visits ========================= //

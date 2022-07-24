@@ -1,0 +1,22 @@
+class Bagel {}
+var bagel = Bagel();
+print bagel; // Prints "Bagel instance".
+
+class Breakfast {
+    something() {
+        print "I am eating breakfast";
+    }
+}
+
+// this searches env for Breakfast, returns the LoxClass, then the () triggers call() method on the LoxClass
+// creating a LoxInstance, and finally we bind that LoxInstance to "instance" variable in global env
+var instance = Breakfast();
+
+// grabs the LoxFunction from the LoxClass (after searching the 
+// LoxInstance using getField and not finding a field of name "something",
+// it will use findMethod instead on LoxClass)
+instance.something();
+
+// sets the field on the LoxInstance
+instance.money = 3;
+print instance.money;

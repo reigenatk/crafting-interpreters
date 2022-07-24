@@ -14,6 +14,7 @@ abstract class Statement {
 		R visitBreakStatementStatement(BreakStatement statement);
 		R visitFunctionStatementStatement(FunctionStatement statement);
 		R visitReturnStatementStatement(ReturnStatement statement);
+		R visitClassDeclarationStatement(ClassDeclaration statement);
 	}
 	static class ExpressionStatement extends Statement {
 		final Expression expression;
@@ -133,6 +134,20 @@ abstract class Statement {
 		ReturnStatement(Token returnKeyword, Expression exp) {
 			this.returnKeyword = returnKeyword;
 			this.exp = exp;
+		}
+	}
+	static class ClassDeclaration extends Statement {
+		final Token nameOfClass;
+		final List<FunctionStatement> methods;
+
+		@Override
+		<R> R accept(Visitor<R> visitor) {
+			return visitor.visitClassDeclarationStatement(this);
+		}
+
+		ClassDeclaration(Token nameOfClass, List<FunctionStatement> methods) {
+			this.nameOfClass = nameOfClass;
+			this.methods = methods;
 		}
 	}
 
