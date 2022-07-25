@@ -19,6 +19,4 @@ typedef enum {
 void initVM();
 void freeVM();
 InterpretResult interpretChunk(Chunk* c);
-InterpretResult run();
-
 #endif
