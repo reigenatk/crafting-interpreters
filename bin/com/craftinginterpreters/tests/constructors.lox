@@ -1,0 +1,17 @@
+class constructorTest {
+    init() {
+        this.state1 = 3;
+        this.state2 = 4;
+    }
+    checkState() {
+        print this.state1;
+        print this.state2;
+    }
+}
+
+var instance = constructorTest();
+instance.checkState();
+
+// this test should print "3 4" and if it does, it proves that the constructor
+// with name "init" is being ran on instantiation, to initialize the values of state1 and state2,
+// so that when checkState runs, the values are already there.

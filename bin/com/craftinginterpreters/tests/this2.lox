@@ -1,0 +1,23 @@
+class Cake {
+ taste() {
+ var adjective = "delicious";
+ print "The " + this.flavor + " cake is " + adjective + "!";
+ }
+}
+var cake = Cake();
+cake.flavor = "German chocolate";
+cake.taste(); // Prints "The German chocolate cake is delicious!".
+
+// here's the debug output
+
+// Pushing scope, there are now 1 scopes.
+// Putting this keyword in scope at depth 1
+// Pushing scope, there are now 2 scopes.
+// Declaring adjective at scope of depth 2
+// Defining adjective at scope of depth 2
+// Resolving this...
+// Calling interpreter.resolve() with expression: this and distance 1
+// Calling interpreter.resolve() with expression: adjective and distance 0
+// Popping scope, there are now 1 scopes.
+// Popping scope, there are now 0 scopes.
+// The German chocolate cake is delicious!

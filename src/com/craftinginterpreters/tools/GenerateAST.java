@@ -27,7 +27,8 @@ public class GenerateAST {
         "Logical: Expression left, Token operator, Expression right",
         "Call: Expression callee, List<Expression> args, Token closingParenthesis",
         "Get: Expression object, Token name",
-        "Set: Expression object, Token name, Expression value"
+        "Set: Expression object, Token name, Expression value",
+        "This: Token keyword"
         ));
 
         // a statement is a superset of expressions. You can have expressions inside of statements

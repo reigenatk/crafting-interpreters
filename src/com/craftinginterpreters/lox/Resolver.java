@@ -9,7 +9,13 @@ import com.craftinginterpreters.lox.Expression.*;
 import com.craftinginterpreters.lox.Statement.*;
 
 /**
- * This is a class for performing static analysis on code, mainly to resolve variables
+ * This is a class for performing static analysis on code, mainly to resolve LOCAL variables
+ * For the visit expressions, to deduce which parts need resolving, just think about whether or not 
+ * it could be a variable. If the answer is yes, we need to resolve() it
+ * Also, resolve parses the syntax tree the exact same way as Interpreter, and the critical function is 
+ * resolveLocal, which calls Interpreter.resolve() and adds info the locals hashmap in Interpreter so 
+ * that during runtime, Interpreter knows which variable corresponds to what by knowing how many scopes
+ * to jump 
  */
 public class Resolver implements Expression.Visitor<Void>, Statement.Visitor<Void> {
     private final Interpreter interpreter;
@@ -24,7 +30,14 @@ public class Resolver implements Expression.Visitor<Void>, Statement.Visitor<Voi
     private enum FunctionType {
         NONE,
         FUNCTION,
-        METHOD
+        METHOD,
+        CONSTRUCTOR
+    }
+
+    private ClassType currentClass = ClassType.NONE;
+    private enum ClassType {
+        NONE,
+        CLASS
     }
 
     Resolver(Interpreter i) {
@@ -47,10 +60,12 @@ public class Resolver implements Expression.Visitor<Void>, Statement.Visitor<Voi
 
     private void beginScope() {
         scopes.push(new HashMap<>());
+        System.out.println("Pushing scope, there are now " + scopes.size() + " scopes.");
     }
 
     private void endScope() {
         scopes.pop();
+        System.out.println("Popping scope, there are now " + scopes.size() + " scopes.");
     }
 
     private void declare(Token name) {
@@ -70,14 +85,14 @@ public class Resolver implements Expression.Visitor<Void>, Statement.Visitor<Voi
 
         // and put the name of the token in. 
         // the False means we have not finished resolving this variables' initializer
-        System.out.println("Declaring " + name.lexeme);
+        System.out.println("Declaring " + name.lexeme + " at scope of depth " + scopes.size());
         scope.put(name.lexeme, false);
     }
 
     private void define(Token name) {
         if (scopes.isEmpty()) return;
 
-        System.out.println("Defining " + name.lexeme);
+        System.out.println("Defining " + name.lexeme + " at scope of depth " + scopes.size());
         // now mark as true to say that it is defined
         scopes.peek().put(name.lexeme, true);
     }
@@ -89,7 +104,7 @@ public class Resolver implements Expression.Visitor<Void>, Statement.Visitor<Voi
             if (scopes.get(i).containsKey(name.lexeme)) {
                 // second arg is number of scopes between current scope and the one where it was found
                 // send this resolve info to interpreter so it can use the info during runtime
-                System.out.println("Calling resolve with expression: " + name.lexeme + " and distance " + (scopes.size() - i - 1));
+                System.out.println("Calling interpreter.resolve() with expression: " + name.lexeme + " and distance " + (scopes.size() - i - 1));
                 interpreter.resolve(expression, scopes.size() - i - 1);
                 return;
             }
@@ -180,14 +195,29 @@ public class Resolver implements Expression.Visitor<Void>, Statement.Visitor<Voi
 
     @Override
     public Void visitClassDeclarationStatement(ClassDeclaration statement) {
+        ClassType currentClassSave = currentClass;
+        currentClass = ClassType.CLASS;
         // we must declare/define the class in this scope
         declare(statement.nameOfClass);
         define(statement.nameOfClass);
 
+        // define the "this" keyword once a class is defined, in a scope right underneath this one
+        beginScope();
+        System.out.println("Putting this keyword in scope at depth " + scopes.size());
+        scopes.peek().put("this", true);
+
         // resolve all the methods
         for (FunctionStatement f : statement.methods) {
-            resolveFunction(f, FunctionType.METHOD);
+            FunctionType funcType = FunctionType.METHOD;
+            if (f.funcName.lexeme.equals("init")) {
+                funcType = FunctionType.CONSTRUCTOR;
+            }
+            resolveFunction(f, funcType);
         }
+
+        // matching endScope
+        endScope();
+        currentClass = currentClassSave;
         return null;
     }
 
@@ -216,9 +246,10 @@ public class Resolver implements Expression.Visitor<Void>, Statement.Visitor<Voi
 
     @Override
     public Void visitReturnStatementStatement(ReturnStatement statement) {
-        if (currentFunction == FunctionType.NONE) {
+        if (currentFunction == FunctionType.NONE || currentFunction == FunctionType.CONSTRUCTOR) {
             // bad
-            Lox.error(statement.returnKeyword, "Return keyword must take place in a function");
+            Lox.error(statement.returnKeyword, "Return keyword must take place in a function that is not a constructor");
+            return null;
         }
         resolve(statement.exp);
         return null;
@@ -276,6 +307,9 @@ public class Resolver implements Expression.Visitor<Void>, Statement.Visitor<Voi
         return null;
     }
 
+    // a.x for example. We don't care about resolving x as that is just the name of a field, not a local variable.
+    // it will be the argument to LoxInstance.getField. We care about the expression "a" instead since that could 
+    // be a local variable
     @Override
     public Void visitGetExpression(Get expression) {
         resolve(expression.object);
@@ -295,4 +329,14 @@ public class Resolver implements Expression.Visitor<Void>, Statement.Visitor<Voi
         return null;
     }
 
+    @Override
+    public Void visitThisExpression(This expression) {
+        System.out.println("Resolving this...");
+        if (currentClass != ClassType.CLASS) {
+            Lox.error(expression.keyword, "'this' keyword must take place in a method");
+            return null;
+        }
+        resolveLocal(expression, expression.keyword);
+        return null;
+    }
 }

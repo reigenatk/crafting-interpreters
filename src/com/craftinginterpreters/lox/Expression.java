@@ -15,6 +15,7 @@ abstract class Expression {
 		R visitCallExpression(Call expression);
 		R visitGetExpression(Get expression);
 		R visitSetExpression(Set expression);
+		R visitThisExpression(This expression);
 	}
 	static class Binary extends Expression {
 		final Expression left;
@@ -156,6 +157,18 @@ abstract class Expression {
 			this.object = object;
 			this.name = name;
 			this.value = value;
+		}
+	}
+	static class This extends Expression {
+		final Token keyword;
+
+		@Override
+		<R> R accept(Visitor<R> visitor) {
+			return visitor.visitThisExpression(this);
+		}
+
+		This(Token keyword) {
+			this.keyword = keyword;
 		}
 	}
 

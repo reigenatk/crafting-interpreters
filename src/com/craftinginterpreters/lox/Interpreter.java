@@ -8,13 +8,15 @@ import java.util.Map;
 
 import com.craftinginterpreters.lox.Expression.Get;
 import com.craftinginterpreters.lox.Expression.Set;
+import com.craftinginterpreters.lox.Expression.This;
 import com.craftinginterpreters.lox.Statement.ClassDeclaration;
 
 // this marks the beginning of the RUNTIME
 // the class that actually takes the expressions from the syntax tree
 // and EVALUATES them in Java. Result is always an
 // Object (which can be any of the primitive data types)
-// this allows for dynamic typing, meaning we only resolve types here.
+// this allows for dynamic typing, meaning that the variables in Lox don't need to declare their type
+// we figure all that out here instead.
 public class Interpreter implements Expression.Visitor<Object>, Statement.Visitor<Void> {
 
     // the global environment, with our native functions and variables in it
@@ -198,7 +200,7 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
     public Void visitFunctionStatementStatement(Statement.FunctionStatement statement) {
 
         // set it to be the closure of the function (also pass the funcstatement in)
-        LoxFunction lf = new LoxFunction(statement, currentEnv);
+        LoxFunction lf = new LoxFunction(statement, currentEnv, false);
 
         // define the function object itself into current environment
         currentEnv.addNewVariable(statement.funcName.lexeme, lf);
@@ -222,7 +224,8 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
         // we will pass in map to LoxClass constructor
         Map<String, LoxFunction> methods = new HashMap<>();
         for (Statement.FunctionStatement f : statement.methods) {
-            LoxFunction lf = new LoxFunction(f, currentEnv);
+            Boolean isConstructor = f.funcName.lexeme.equals("init");
+            LoxFunction lf = new LoxFunction(f, currentEnv, isConstructor);
             methods.put(f.funcName.lexeme, lf);
         }
 
@@ -326,22 +329,27 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
         return null;
     }
 
-    // assuming "var x = 3" was ran before this, then doing "x;" a line later should return 3
-    @Override
-    public Object visitVariableExpression(Expression.Variable expression) {
+    private Object lookupVariable(Expression expression, Token name) {
         // lookup the variable in the resolver map
         // dist is the number of scopes up that we need to travel
         Integer dist = locals.get(expression);
         if (dist == null) {
-            System.out.println("Variable " + expression + " is global");
+            // System.out.println("Variable " + expression + " is global");
+
             // if dist is null then that means it wasn't resolved 
             // which means that variable is in globals
-            return globals.getVariableValue(expression.name);
+            return globals.getVariableValue(name);
         }
         else {
             // var is local, just use the getAt to go up the scope linked list
-            return currentEnv.getAt(expression.name.lexeme, dist);
+            return currentEnv.getAt(name.lexeme, dist);
         }
+    }
+
+    // assuming "var x = 3" was ran before this, then doing "x;" a line later should return 3
+    @Override
+    public Object visitVariableExpression(Expression.Variable expression) {
+        return lookupVariable(expression, expression.name);
     }
 
     // something like "x=3;" returns 3 believe it or not
@@ -446,6 +454,17 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
         }
 
         throw new RuntimeError(expression.name, "Must set member on instance of a class");
+    }
+
+    // the way we've done it, "this" is an actual symbol in the environment
+    // so just do lookupVariable, like we would any other variable name.
+    // to see how its implemented, checkout LoxInstance.getField() and how we use bind()
+    // TLDR each time we access a member that is a method, we turn a nested environment so that 
+    // if we access this, then the map sends it to a LoxInstance
+    @Override
+    public Object visitThisExpression(This expression) {
+        // this should return the LoxInstance 
+        return lookupVariable(expression, expression.keyword);
     }
 
     // ================================= End Expression Visits ========================= //

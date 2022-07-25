@@ -1,7 +1,9 @@
+// EXAMPLE 1 ======================================================================================
 class Bagel {}
 var bagel = Bagel();
-print bagel; // Prints "Bagel instance".
+print bagel; // Prints "instance of class Bagel" because toString on a LoxInstance is in this format
 
+// EXAMPLE 2 ========================================================================================
 class Breakfast {
     something() {
         print "I am eating breakfast";
@@ -15,8 +17,8 @@ var instance = Breakfast();
 // grabs the LoxFunction from the LoxClass (after searching the 
 // LoxInstance using getField and not finding a field of name "something",
 // it will use findMethod instead on LoxClass)
-instance.something();
+instance.something(); // "I am eating breakfast"
 
-// sets the field on the LoxInstance
+// sets a field on the LoxInstance called "money", that didn't exist before.
 instance.money = 3;
-print instance.money;
+print instance.money; // 3

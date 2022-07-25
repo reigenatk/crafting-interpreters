@@ -1,0 +1,34 @@
+class Thing {
+ getCallback() {
+ fun localFunction() {
+ print this;
+ }
+ return localFunction;
+ }
+}
+var callback = Thing().getCallback();
+callback(); // Prints "instance of class Thing"
+
+// so this example is demonstrating the usage of the keyword "this"
+// the way we've implemented it, "this" is auto defined in a scope by resolveClassDeclaration()
+// and so when it says "print this" it will then try to resolve the this keyword, which gets
+// resolved like any other variable and gets a distance which turns out to be 2 (because inside localFunction is
+// scope 3, and this is defined in scope 1.) Check out the output logs:
+
+// Pushing scope, there are now 1 scopes.
+// Putting this keyword in scope at depth 1
+// Pushing scope, there are now 2 scopes.
+// Declaring localFunction at scope of depth 2
+// Defining localFunction at scope of depth 2
+// Pushing scope, there are now 3 scopes.
+// Resolving this...
+// Calling interpreter.resolve() with expression: this and distance 2
+// Popping scope, there are now 2 scopes.
+// Calling interpreter.resolve() with expression: localFunction and distance 0
+// Popping scope, there are now 1 scopes.
+// Popping scope, there are now 0 scopes.
+// instance of class Thing
+
+// note how the scope in which "this" is defined is 1 above the definition of the localFunction() function
+// and how the execution of the localFunction is yet another scope deeper. So function and "this" are NOT
+// defined on the same scope!

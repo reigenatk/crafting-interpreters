@@ -503,6 +503,9 @@ public class Parser {
         // forwards in the List of Tokens
         if (match(NUMBER, STRING)) return new Expression.Literal(previous().literal);
 
+        // this statement
+        if (match(THIS)) return new Expression.This(previous());
+
         // if its none of these patterns before, then we say it must be a variable token
         if (match(IDENTIFIER)) return new Expression.Variable(previous());
 

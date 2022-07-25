@@ -18,6 +18,11 @@ public class LoxInstance {
         return "instance of " + classType.toString();
     }
 
+    // ok so this is tricky but essentially since in Resolver we said that the this keyword is defined
+    // in the class scope upon class declaration, and the locals hashmap in Interpreter will expect this,
+    // then we need to also create this extra envrionment inside Interpreter (which calls LoxInstance.getField
+    // in visitGetExpression). The resolver and Interpreter must match up. Otherwise we 
+    // will get errors. So that's why we do lf.bind().
     public Object getField(Token nameOfMember) {
         // check that field actually exists on the class
         if (fields.containsKey(nameOfMember.lexeme)) {
@@ -25,9 +30,10 @@ public class LoxInstance {
         }
 
         // Ok, its not a field. Check if its a method stored on the class
-        LoxFunction lf = classType.findMethod(nameOfMember);
-        if (lf != null) return lf;
-        
+        LoxFunction lf = classType.findMethod(nameOfMember.lexeme);
+        // use .bind() to add the "this" symbol using an extra layer of environment
+        if (lf != null) return lf.bind(this);
+
         throw new RuntimeError(nameOfMember, "No property " + nameOfMember.lexeme + " on " + classType);
     }
 
