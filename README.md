@@ -9,12 +9,14 @@ The language we will make is called **Lox**, and it is very similar to C in synt
 Assume the same as in C, except:
 
 - Functions are declared using the `fun` keyword
-- There are no types, this is dynamically typed language
+- There are no types, this is a dynamically typed language unlike C.
 - For OOP, create instances of a class by calling the name of the class like a function
 - Class definitions can only have functions inside of them, which will call methods. They must not have the `fun` keyword in front of them. 
 - The constructor must be named `init()`
 - Supports `or`, `and`, `this` and `super` statements
-- Check out the examples if still confused. You can run them by doing 
+- Check out the example programs [here](https://github.com/reigenatk/crafting-interpreters/tree/master/bin/com/craftinginterpreters/tests) if still confused. You can run them by doing 
+
+![image](https://user-images.githubusercontent.com/69275171/180840707-259b60ef-ba8e-4a38-bff1-b5b4f80695a3.png)
 
 We will implement two interpreters, the first one in Java, which we will call JLox.
 
