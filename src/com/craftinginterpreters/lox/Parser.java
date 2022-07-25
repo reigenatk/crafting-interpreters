@@ -234,9 +234,16 @@ public class Parser {
         return function("function");
     }
 
-    // classDecl → "class" IDENTIFIER "{" function* "}" 
+    // classDecl → "class" IDENTIFIER ( ":" IDENTIFIER )? "{" function* "}" ;
     private Statement classDeclaration() {
         Token nameOfClass = consume(IDENTIFIER, "Expecting class name after 'class' keyword");
+        
+        // check if it inherits from anything
+        Expression.Variable superclass = null;
+        if (match(COLON)) {
+            Token superclassToken = consume(IDENTIFIER, "Superclass must have a name");
+            superclass = new Expression.Variable(superclassToken);
+        }
         consume(LEFT_BRACE, "Expecting '{' character");
 
         // here we gonna be specific and say List of FunctionStatements since function()
@@ -248,7 +255,7 @@ public class Parser {
         }
 
         consume(RIGHT_BRACE, "Expecting '}' character after class methods");
-        return new Statement.ClassDeclaration(nameOfClass, classMethods);
+        return new Statement.ClassDeclaration(nameOfClass, superclass, classMethods);
     }
 
     // function → IDENTIFIER "(" parameters? ")" block
@@ -498,6 +505,7 @@ public class Parser {
         if (match(NIL)) return new Expression.Literal(null);
         if (match(TRUE)) return new Expression.Literal(true);
         if (match(FALSE)) return new Expression.Literal(false);
+
 
         // we need to do previous here because recall, match() does advance the counter
         // forwards in the List of Tokens

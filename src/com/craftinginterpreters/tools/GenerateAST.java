@@ -42,7 +42,7 @@ public class GenerateAST {
             "BreakStatement: ",
             "FunctionStatement: Token funcName, List<Token> args, List<Statement> code",
             "ReturnStatement: Token returnKeyword, Expression exp",
-            "ClassDeclaration: Token nameOfClass, List<FunctionStatement> methods"
+            "ClassDeclaration: Token nameOfClass, Expression.Variable superclass, List<FunctionStatement> methods"
         ));
     }
 

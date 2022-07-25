@@ -9,10 +9,12 @@ import com.craftinginterpreters.lox.Statement.FunctionStatement;
 public class LoxClass implements LoxCallable {
     private Map<String, LoxFunction> methods;
     private String nameOfClass;
+    private LoxClass superclass;
 
-    LoxClass(String name, Map<String, LoxFunction> methods) {
+    LoxClass(String name, LoxClass superclass, Map<String, LoxFunction> methods) {
         nameOfClass = name;
         this.methods = methods;
+        this.superclass = superclass;
     }
 
     @Override
@@ -50,9 +52,23 @@ public class LoxClass implements LoxCallable {
         return instance;
     }
 
-    // called by LoxInstance.getField()
+    // called by LoxInstance.getField(). Searches the methods hashmap for a method of this name
     public LoxFunction findMethod(String methodName) {
-        return methods.get(methodName);
+
+        LoxFunction lf = methods.get(methodName);
+        if (lf == null) {
+            // perhaps the superclass knows?
+            if (superclass != null) {
+                return superclass.findMethod(methodName);
+            }
+            else {
+                // uh oh, no one knows
+                Token bsToken = new Token(TokenType.COLON, ":", ":", -1);
+                return null;
+                // throw new RuntimeError(bsToken, "Couldn't find method of name " + methodName);
+            }
+        }
+        return lf;
     }
 
 }

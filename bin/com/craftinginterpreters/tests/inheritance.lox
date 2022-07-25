@@ -1,0 +1,19 @@
+// this puts new mapping 'superclass' -> LoxClass with method called method1
+class superclass {
+    method1() {
+        print "I am in superclass";
+    }
+}
+
+// this will set it up such that the LoxClass' superclass arg points to the superclass LoxClass object.
+class subclass : superclass {
+    method2() {
+        print "something";
+    }
+}
+
+var instance = subclass();
+
+// when we call this here then, the function findMethod will look at subclass, have no idea,
+// and then check out superclass, and find the LoxFunction. Then it runs call() on that LoxFunction
+instance.method1();

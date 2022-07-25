@@ -138,6 +138,7 @@ abstract class Statement {
 	}
 	static class ClassDeclaration extends Statement {
 		final Token nameOfClass;
+		final Expression.Variable superclass;
 		final List<FunctionStatement> methods;
 
 		@Override
@@ -145,8 +146,9 @@ abstract class Statement {
 			return visitor.visitClassDeclarationStatement(this);
 		}
 
-		ClassDeclaration(Token nameOfClass, List<FunctionStatement> methods) {
+		ClassDeclaration(Token nameOfClass, Expression.Variable superclass, List<FunctionStatement> methods) {
 			this.nameOfClass = nameOfClass;
+			this.superclass = superclass;
 			this.methods = methods;
 		}
 	}

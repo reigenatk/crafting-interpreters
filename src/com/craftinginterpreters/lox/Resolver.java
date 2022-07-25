@@ -201,6 +201,15 @@ public class Resolver implements Expression.Visitor<Void>, Statement.Visitor<Voi
         declare(statement.nameOfClass);
         define(statement.nameOfClass);
 
+        // resolve the superclass (should be the name of another class in Expression.Variable form)
+        if (statement.superclass != null) {
+            // check that we aren't inheriting ourself
+            if (statement.nameOfClass.lexeme.equals(statement.superclass.name.lexeme)) {
+                Lox.error(statement.superclass.name, "Cannot inherit own class");
+            }
+            resolve(statement.superclass);
+        }
+
         // define the "this" keyword once a class is defined, in a scope right underneath this one
         beginScope();
         System.out.println("Putting this keyword in scope at depth " + scopes.size());

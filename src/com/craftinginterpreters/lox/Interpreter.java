@@ -219,17 +219,30 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
         // first define the class to be null
         currentEnv.addNewVariable(statement.nameOfClass.lexeme, null);
 
+        // should be of type LoxClass
+        Object superClass = null;
+        if (statement.superclass != null) {
+            superClass = evaluate(statement.superclass);
+            if (!(superClass instanceof LoxClass)) {
+                throw new RuntimeError(statement.superclass.name, "Class " + 
+                statement.superclass.name.lexeme + " could not be found");
+                
+            }
+        }
+
+
         // parse all the methods by transforming the FunctionStatement into a LoxFunction 
         // (the runtime representation of a function)
         // we will pass in map to LoxClass constructor
         Map<String, LoxFunction> methods = new HashMap<>();
         for (Statement.FunctionStatement f : statement.methods) {
+            // is the function a constructor?
             Boolean isConstructor = f.funcName.lexeme.equals("init");
             LoxFunction lf = new LoxFunction(f, currentEnv, isConstructor);
             methods.put(f.funcName.lexeme, lf);
         }
 
-        LoxClass lc = new LoxClass(statement.nameOfClass.lexeme, methods);
+        LoxClass lc = new LoxClass(statement.nameOfClass.lexeme, (LoxClass) superClass, methods);
         
         // now bind the runtime class object to the name
         currentEnv.changeExistingVariable(statement.nameOfClass, lc);
