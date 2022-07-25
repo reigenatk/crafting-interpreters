@@ -11,10 +11,10 @@ int main(int argc, const char* argv[]) {
     Chunk c;
     initChunk(&c);
     int idx = addConstantToChunk(&c, 21);
-    writeChunk(&c, OP_CONSTANT, 3);
+    writeChunk(&c, OP_CONSTANT, 1);
     writeChunk(&c, idx, 1);
     writeChunk(&c, OP_RETURN, 2);
-    dissasembleChunk(&c, "test chunk");
+    // dissasembleChunk(&c, "test chunk");
 
     // ask the VM to interpret our bytecode!
     interpretChunk(&c);
