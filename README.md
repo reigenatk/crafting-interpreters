@@ -34,4 +34,8 @@ Some notes on the important classes:
 
 ## CLox
 
-We will implement a C version to increase performance. The goal is to create bytecode instead of directly parsing the syntax tree. 
+We will implement a C version to increase performance. The goal is to create **bytecode** instead of directly parsing the syntax tree. 
+
+The bytecode will be similar to things like Python bytecode.
+
+This implementation is [here](https://github.com/reigenatk/crafting-interpreters/tree/master/clox). To start clox, run the makefile.
