@@ -8,6 +8,7 @@ import java.util.Map;
 
 import com.craftinginterpreters.lox.Expression.Get;
 import com.craftinginterpreters.lox.Expression.Set;
+import com.craftinginterpreters.lox.Expression.Super;
 import com.craftinginterpreters.lox.Expression.This;
 import com.craftinginterpreters.lox.Statement.ClassDeclaration;
 
@@ -226,10 +227,11 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
             if (!(superClass instanceof LoxClass)) {
                 throw new RuntimeError(statement.superclass.name, "Class " + 
                 statement.superclass.name.lexeme + " could not be found");
-                
             }
+            // add super keyword
+            currentEnv = new Environment(currentEnv);
+            currentEnv.addNewVariable("super", superClass);
         }
-
 
         // parse all the methods by transforming the FunctionStatement into a LoxFunction 
         // (the runtime representation of a function)
@@ -247,6 +249,9 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
         // now bind the runtime class object to the name
         currentEnv.changeExistingVariable(statement.nameOfClass, lc);
 
+        if (statement.superclass != null) {
+            currentEnv = currentEnv.parentEnv; // restore old env, this undoes the scope for the "super" keyword 
+        }
         return null;
     }
 
@@ -478,6 +483,29 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
     public Object visitThisExpression(This expression) {
         // this should return the LoxInstance 
         return lookupVariable(expression, expression.keyword);
+    }
+
+    @Override
+    public Object visitSuperExpression(Super expression) {
+        // get distance to superclass
+        Integer dist = locals.get(expression);
+
+        // get the actual superclass
+        LoxClass superClass = (LoxClass) currentEnv.getAt("super", dist);
+
+        // get the actual LoxInstance, which we know is one before the "super" scope
+        // we need this so we can call bind later (which sets up the "this" scope)
+        LoxInstance object = (LoxInstance)currentEnv.getAt("this", dist - 1);
+
+        // then get the method from the point of the superclass
+        LoxFunction ret = superClass.findMethod(expression.method.lexeme);
+
+        if (ret == null) {
+            throw new RuntimeError(expression.method, "Method of name " + expression.method.lexeme + " not found.");
+        }
+
+        return ret.bind(object);
+
     }
 
     // ================================= End Expression Visits ========================= //

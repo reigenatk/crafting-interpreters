@@ -1,0 +1,39 @@
+class A {
+ method() {
+ print "Method A";
+ }
+}
+class B : A {
+ method() {
+ print "Method B";
+ }
+ test() {
+    super.method();
+ }
+}
+class C : B {}
+C().test(); // should call A's method
+
+// Pushing scope, there are now 1 scopes.
+// Putting this keyword in scope at depth 1
+// Pushing scope, there are now 2 scopes.
+// Popping scope, there are now 1 scopes.
+// Popping scope, there are now 0 scopes.
+// Pushing scope, there are now 1 scopes.
+// Putting super keyword in scope at depth 1
+// Pushing scope, there are now 2 scopes.
+// Putting this keyword in scope at depth 2
+// Pushing scope, there are now 3 scopes.
+// Popping scope, there are now 2 scopes.
+// Pushing scope, there are now 3 scopes.
+// Calling interpreter.resolve() with expression: super and distance 2
+// Popping scope, there are now 2 scopes.
+// Popping scope, there are now 1 scopes.
+// Popping scope, there are now 0 scopes.
+// Pushing scope, there are now 1 scopes.
+// Putting super keyword in scope at depth 1
+// Pushing scope, there are now 2 scopes.
+// Putting this keyword in scope at depth 2
+// Popping scope, there are now 1 scopes.
+// Popping scope, there are now 0 scopes.
+// Method A

@@ -63,7 +63,7 @@ public class LoxFunction implements LoxCallable {
     }
 
     // called from LoxInstance.getField(), used to add an extra layer of environment with 
-    // a symbol called "this" defined inside, then returns a LoxFunction back. Check out page 206 for more info
+    // a symbol called "this" defined inside, then returns a LoxInstance back. Check out page 206 for more info
     public LoxFunction bind(LoxInstance instance) {
         Environment env = new Environment(closure);
         env.addNewVariable("this", instance);

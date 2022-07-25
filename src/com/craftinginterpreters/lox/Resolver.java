@@ -37,7 +37,8 @@ public class Resolver implements Expression.Visitor<Void>, Statement.Visitor<Voi
     private ClassType currentClass = ClassType.NONE;
     private enum ClassType {
         NONE,
-        CLASS
+        CLASS,
+        SUBCLASS
     }
 
     Resolver(Interpreter i) {
@@ -203,11 +204,19 @@ public class Resolver implements Expression.Visitor<Void>, Statement.Visitor<Voi
 
         // resolve the superclass (should be the name of another class in Expression.Variable form)
         if (statement.superclass != null) {
+            // say we're now in a subclass
+            currentClass = ClassType.SUBCLASS;
+
             // check that we aren't inheriting ourself
             if (statement.nameOfClass.lexeme.equals(statement.superclass.name.lexeme)) {
                 Lox.error(statement.superclass.name, "Cannot inherit own class");
             }
             resolve(statement.superclass);
+
+            // scope for the "super" keyword
+            beginScope();
+            System.out.println("Putting super keyword in scope at depth " + scopes.size());
+            scopes.peek().put("super", true);
         }
 
         // define the "this" keyword once a class is defined, in a scope right underneath this one
@@ -224,8 +233,8 @@ public class Resolver implements Expression.Visitor<Void>, Statement.Visitor<Voi
             resolveFunction(f, funcType);
         }
 
-        // matching endScope
-        endScope();
+        endScope(); // matching endScope for 'this' keyword
+        if (statement.superclass != null) endScope(); // terminate 'super' keyword scope
         currentClass = currentClassSave;
         return null;
     }
@@ -341,8 +350,22 @@ public class Resolver implements Expression.Visitor<Void>, Statement.Visitor<Voi
     @Override
     public Void visitThisExpression(This expression) {
         System.out.println("Resolving this...");
-        if (currentClass != ClassType.CLASS) {
-            Lox.error(expression.keyword, "'this' keyword must take place in a method");
+        if (currentClass != ClassType.CLASS && currentClass != ClassType.SUBCLASS) {
+            Lox.error(expression.keyword, "'this' keyword must take place in a class method");
+            return null;
+        }
+        // this will already be in a scope by itself thanks to 
+        // visitClassDeclaration, so we can just say "resolveLocal" on it
+        resolveLocal(expression, expression.keyword);
+        return null;
+    }
+
+    @Override
+    public Void visitSuperExpression(Super expression) {
+        // resolve the 'super' keyword itself. Because again, its gonna be in its own scope like 'this'
+        if (currentClass != ClassType.SUBCLASS) {
+            Lox.error(expression.keyword, "'super' keyword must take place in a class" 
+            + " method that is inheriting from another class");
             return null;
         }
         resolveLocal(expression, expression.keyword);

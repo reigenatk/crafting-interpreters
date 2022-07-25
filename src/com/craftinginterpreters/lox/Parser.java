@@ -498,7 +498,9 @@ public class Parser {
         return new Expression.Call(e, args, rightParen);
     }
 
-    // primary → NUMBER | STRING | "true" |
+    // primary → "true" | "false" | "nil" | "this"
+    // | NUMBER | STRING | IDENTIFIER | "(" expression ")"
+    // | "super" "." IDENTIFIER ;
     private Expression primary() {
         // these keywords don't have value assigned to them from Scanner
         // so we attach them manually here
@@ -517,12 +519,19 @@ public class Parser {
         // if its none of these patterns before, then we say it must be a variable token
         if (match(IDENTIFIER)) return new Expression.Variable(previous());
 
+        // super
+        if (match(SUPER)) {
+            Token superKeyword = previous();
+            consume(DOT, "super keyword must be followed by a '.'");
+            Token field = consume(IDENTIFIER, "Expecting superclass method");
+            return new Expression.Super(superKeyword, field);
+        }
+
         // this part is interesting- basically, if we have a ( then 
         // it will be picked up as a literal. It will then recurse on the right side of 
         // the ( and eventually primary will be called again on a ')' character. Knowing that 
         // occurs we can then check for that in the left brace's code. Weird stuff.
         // this way we can check that every left brace has a corresponding closing right brace
-
         if (match(LEFT_PAREN)) {
             Expression expr = expression();
             consume(RIGHT_PAREN, "opening left brace must be closed");

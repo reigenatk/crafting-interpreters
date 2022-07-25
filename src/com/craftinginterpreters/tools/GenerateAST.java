@@ -17,6 +17,7 @@ public class GenerateAST {
         String outputDir = args[0];
 
         // an expression is a grouping of tokens and other expressions in a certain order
+        // typically field names and literal symbols are Token, and variables are expressions
         defineAST(outputDir, "Expression", Arrays.asList(
         "Binary : Expression left, Token operator, Expression right",
         "Grouping : Expression expression",
@@ -28,7 +29,8 @@ public class GenerateAST {
         "Call: Expression callee, List<Expression> args, Token closingParenthesis",
         "Get: Expression object, Token name",
         "Set: Expression object, Token name, Expression value",
-        "This: Token keyword"
+        "This: Token keyword",
+        "Super: Token keyword, Token method"
         ));
 
         // a statement is a superset of expressions. You can have expressions inside of statements

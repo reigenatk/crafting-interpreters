@@ -1,0 +1,35 @@
+class Doughnut {
+ cook() {
+ print "Fry until golden brown.";
+ }
+}
+class BostonCream : Doughnut {
+ cook() {
+ super.cook();
+ print "Pipe full of custard and coat with chocolate.";
+ }
+}
+BostonCream().cook();
+
+// so output is below. Basically, since we made a super scope on class declaration of BostonCream,
+// and mapped the "super" Object to Doughnut
+// in visitClassDeclarationStatement, it knows to call Doughnut's
+// version of cook first.
+
+
+// Pushing scope, there are now 1 scopes.
+// Putting this keyword in scope at depth 1
+// Pushing scope, there are now 2 scopes.
+// Popping scope, there are now 1 scopes.
+// Popping scope, there are now 0 scopes.
+// Pushing scope, there are now 1 scopes.
+// Putting super keyword in scope at depth 1
+// Pushing scope, there are now 2 scopes.
+// Putting this keyword in scope at depth 2
+// Pushing scope, there are now 3 scopes.
+// Calling interpreter.resolve() with expression: super and distance 2
+// Popping scope, there are now 2 scopes.
+// Popping scope, there are now 1 scopes.
+// Popping scope, there are now 0 scopes.
+// Fry until golden brown.
+// Pipe full of custard and coat with chocolate.
