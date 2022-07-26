@@ -13,7 +13,8 @@ int main(int argc, const char* argv[]) {
     int idx = addConstantToChunk(&c, 21);
     writeChunk(&c, OP_CONSTANT, 1);
     writeChunk(&c, idx, 1);
-    writeChunk(&c, OP_RETURN, 2);
+    writeChunk(&c, OP_NEGATE, 2);
+    writeChunk(&c, OP_RETURN, 3);
     // dissasembleChunk(&c, "test chunk");
 
     // ask the VM to interpret our bytecode!

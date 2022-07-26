@@ -27,6 +27,14 @@ static int constantInstruction(char* name, Chunk* c, int offset) {
     return offset + 2;
 }
 
+/**
+ * @brief this is a function to create human readable output in the terminal
+ * so we can have an easier time debugging our interpreter
+ * 
+ * @param chunk 
+ * @param offset 
+ * @return int 
+ */
 int dissasembleInstruction(Chunk* chunk, int offset) {
     printf("offset: %04d line: %d ", offset, chunk->line_no[offset]);
     uint8_t byte = chunk->code[offset];
@@ -35,6 +43,16 @@ int dissasembleInstruction(Chunk* chunk, int offset) {
             return simpleInstruction("OP_RETURN", offset);
         case OP_CONSTANT:
             return constantInstruction("OP_CONSTANT", chunk, offset);
+        case OP_NEGATE:
+            return simpleInstruction("OP_NEGATE", offset);
+        case OP_ADD:
+            return simpleInstruction("OP_ADD", offset);
+        case OP_SUBTRACT:
+            return simpleInstruction("OP_SUBTRACT", offset);
+        case OP_MULTIPLY:
+            return simpleInstruction("OP_MULTIPLY", offset);
+        case OP_DIVIDE:
+            return simpleInstruction("OP_DIVIDE", offset);
         default:
             printf("Unknown opcode %d\n", byte);
             return offset+1;

@@ -7,8 +7,17 @@
 typedef enum {
     // takes no arguments, just returns
     OP_RETURN,
-    // takes a single byte argument that is the index into the constants array of which constant to load
-    OP_CONSTANT 
+    // takes a single byte argument that is the 
+    // index into the constants array of which constant to load
+    // then puts that value onto the VM stack
+    OP_CONSTANT,
+    // negate the value at top of stack
+    OP_NEGATE,
+    // Binary ops
+    OP_ADD,
+    OP_SUBTRACT,
+    OP_MULTIPLY,
+    OP_DIVIDE,
 } OpCode;
 
 typedef struct {
